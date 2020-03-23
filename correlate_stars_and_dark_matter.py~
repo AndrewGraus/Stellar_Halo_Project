@@ -1,0 +1,73 @@
+#The purpose of this program is to take the stellar halo isolation test
+#And apply it to the dark matter particles, giving a stellar mass to 
+#halo mass ratio for the dark matter
+#
+# Step 1: Isolate the stellar halo using the info from the ipynb
+# Step 2: Take the star particles position data and correlate that
+#         With the nearest DM particle
+#
+# That second step is an interesting one and I might investigate a 
+# few different ways to do that based how to pick the "closest"
+# particle (maybe closest in phase space rather than just 
+# physical space) and what algorithm to use
+#
+
+#step one: Isolate the stellar halo
+
+#First load up the stars
+f_part_star = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.stars.hdf5')
+
+#assign masses and coordinates
+
+star_pos = f_part_star['PartType4']['Coordinates'][:]/h
+star_mass =  f_part_star['PartType4']['Masses'][:]*1.0e10/h
+
+#load up the halo data
+f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
+pos_halo = f_halo['position'][:]
+mass_halo = f_halo['mass'][:]
+radius_halo = f_halo['radius'][:]
+
+#identify the host
+host_id = np.argmax(mass_halo)
+host_mass = mass_halo[host_id]
+host_pos = pos_halo[host_id]
+
+dist = np.linalg.norm(star_pos-host_pos,axis=1) #distance of all the stars from the host center
+dist_halo = np.linalg.norm(pos_halo-host_pos,axis=1) #distance of all halos from the host center
+
+sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e7) #select only halos in "Rvir" and only sats
+                                                               #above a certain mass
+
+sat_pos = pos_halo[sat_mask]
+sat_rad = radius_halo[sat_mask]
+
+dwarf_dist_mask_tot = np.ones_like(dist)*True #initalize a mask for finding all stars in any satellite
+
+#loop over all sats and mask out the stars inside a satellite
+for jj in range(len(sat_rad)):
+    dwarf_pos = sat_pos[jj]
+    dwarf_rad = sat_rad[jj]
+    
+    dwarf_dist = np.linalg.norm(star_pos-dwarf_pos,axis=1)
+    #False if it's IN the satellite
+    dwarf_dist_mask = (dwarf_dist>dwarf_rad)
+    
+    dwarf_dist_mask_tot = dwarf_dist_mask_tot*dwarf_dist_mask
+
+#convert this mask to booleans
+dwarf_dist_mask_tot_bool = map(bool,dwarf_dist_mask_tot)
+stars_in_sats = star_pos[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>10.0)]  
+#We can probably be alot more clever with this mask and select out stars that are in the actual disk
+#by masking out stuff with significant rotation instead of anything within 10 kpc of the center
+#and also to mask out things that are actually in the gravitational well of the satelltes instead of
+#just in the virial radius of a satellite but we're gonna do this quick and dirty at first
+
+#so now I have the positions of all the stars that are in the "halo" as I've defined it.
+
+#now I need to load up the dark matter data and figure out a way to correlate every star particle to its
+#corresponding dark matter particle.
+
+#my intial thinking for doing this would be calculate the distance between every star particle and every
+#dark matter particle (this would create an ENORMOUS matrix)
+
