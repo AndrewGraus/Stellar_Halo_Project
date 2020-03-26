@@ -12,6 +12,9 @@
 # physical space) and what algorithm to use
 #
 
+import numpy as np
+import h5py, sklearn
+
 #step one: Isolate the stellar halo
 
 #First load up the stars
@@ -71,3 +74,51 @@ stars_in_sats = star_pos[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>10.0)]
 #my intial thinking for doing this would be calculate the distance between every star particle and every
 #dark matter particle (this would create an ENORMOUS matrix)
 
+#I think I can actually use sklearn for this. The idea is to use
+#NearestNeightbors run it on the dark matter particles (the training set)
+#and then use the star particles as the data to get eatch star's Neighbor
+#it also returns indicies I can then use those indicies along with a counting
+#algorithim to see now many times each DM particles appears in the 
+#nearest neighbors count then assign mass to the DM particle based on that
+#algorithm
+
+
+#Load full paticle data
+f_part = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.hdf5')
+
+pos_dm = f_part['PartType1']['Coordinates'][:]/h
+ids_dm = f_part['PartType1']['ParticleIDs'][:]
+
+#"learn" the dm positions
+nbrs = sklearn.neighbors.NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(pos_dm)
+
+#now match all the stars in the halo
+NN_dist, NN_indicies = nbrs.kneighbors(stars_in_sats)
+
+#NN_indicies is the indexes of the dark matter particles
+#I should be able to plug this into the particle IDs
+#and get the ids of the DM particles each star
+#is associated with
+
+ids_with_stars = ids_dm[NN_indicies]
+#now I need to count the occurances of each id
+
+unique, counts = np.unique(ids_with_stars, return_counts=True)
+
+unique_sorted_ids = np.argsort(unique)
+
+#now I want to associate the counts with the FULL list of dark matter particles
+
+total_counts_list = np.zeros_like(ids_dm)
+
+not_stars_mask = ids_dm[(ids_dm not in unique)]
+counts_not = np.zeros_like(not_stars_mask)
+
+total_counts = np.merge(counts,counts_not)
+total_ids = np.merge(unique,not_stars_mask)
+
+total_ids_sort_ids = np.argsort(total_ids)
+total_ids_sorted = total_ids[total_ids_sort_ids]
+total_counts_sorted = total_counts[total_ids_sort_ids]
+
+assert total_ids_sorted==np.sort(ids_dm)
