@@ -16,9 +16,13 @@
 # but the mass per star particle is variable
 
 import numpy as np
-import h5py, sklearn
+import h5py
+
+from sklearn.neighbors import NearestNeighbors
 
 #step one: Isolate the stellar halo
+
+h = 0.702
 
 #First load up the stars
 f_part_star = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.stars.hdf5')
@@ -33,17 +37,21 @@ f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
 pos_halo = f_halo['position'][:]
 mass_halo = f_halo['mass'][:]
 radius_halo = f_halo['radius'][:]
+vel_halo = f_halo['velocity'][:]
 
 #identify the host
 host_id = np.argmax(mass_halo)
 host_mass = mass_halo[host_id]
 host_pos = pos_halo[host_id]
+host_vel = vel_halo[host_id]
 
 dist = np.linalg.norm(star_pos-host_pos,axis=1) #distance of all the stars from the host center
 dist_halo = np.linalg.norm(pos_halo-host_pos,axis=1) #distance of all halos from the host center
 
-sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e7) #select only halos in "Rvir" and only sats
-                                                               #above a certain mass
+#sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e7) #select only halos in "Rvir" and only sats
+#                                                               #above a certain mass
+
+sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e10) #select only halos in "Rvir" and only sats
 
 sat_pos = pos_halo[sat_mask]
 sat_rad = radius_halo[sat_mask]
@@ -63,7 +71,8 @@ for jj in range(len(sat_rad)):
     dwarf_dist_mask_tot = dwarf_dist_mask_tot*dwarf_dist_mask
 
 #convert this mask to booleans
-dwarf_dist_mask_tot_bool = map(bool,dwarf_dist_mask_tot)
+dwarf_dist_mask_tot_bool = list(map(bool,dwarf_dist_mask_tot)) #in python3 this returns a map and NOT an array
+
 stars_not_in_sats = star_pos[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>10.0)]  
 mass_of_stars_not_in_sats = star_mass[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>10.0)]
 
@@ -90,52 +99,41 @@ mass_of_stars_not_in_sats = star_mass[dwarf_dist_mask_tot_bool&(dist<300.0)&(dis
 
 
 #Load full paticle data
-f_part = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.hdf5')
+#f_part = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.hdf5')
 
-pos_dm = f_part['PartType1']['Coordinates'][:]/h
-ids_dm = f_part['PartType1']['ParticleIDs'][:]
+#pos_dm = f_part['PartType1']['Coordinates'][:]/h
+#ids_dm = f_part['PartType1']['ParticleIDs'][:]
 
 snap_num = 600
 
 print("loading up DM data")
-if os.path.exists('../output/snapdir_'+str(snap_num).zfill(3)):
-    #gotta merge the snapshots for the folders with multiple files per snapshot                           
-    part_mass = np.empty((0))
-    part_pos = np.empty((0,3))
-    part_vel = np.empty((0,3))
-    part_ids = np.empty((0))
+#gotta merge the snapshots for the folders with multiple files per snapshot                           
+part_mass = np.empty((0))
+part_pos = np.empty((0,3))
+part_vel = np.empty((0,3))
+part_ids = np.empty((0))
 
-    f_part = h5py.File('../output/snapdir_'+str(snap_num).zfill(3)+'/snapshot_'+str(snap_num)\
-.zfill(3)+'.0.hdf5')
-    scale = f_part['Header'].attrs['Time']
+f_part = h5py.File('../m12i_res_7100_cdm/output/snapshot_'+str(snap_num).zfill(3)+'.0.hdf5')
+scale = f_part['Header'].attrs['Time']
 
-    for block in range(4):
-        f_part = h5py.File('./'+dir_file+'/output/snapdir_'+str(snap_num).zfill(3)+'/snapshot_'+str(snap_\
-num).zfill(3)+'.'+str(block)+'.hdf5')
-        mass_block = f_part['PartType1']['Masses'][:]*10**10.0/h
-        pos_block = f_part['PartType1']['Coordinates'][:]*scale/h
-        vel_block = f_part['PartType1']['Velocities'][:]*np.sqrt(scale)
-        ids_block = f_part['PartType1']['ParticleIDs'][:]
+for block in range(4):
+    f_part = h5py.File('../m12i_res_7100_cdm/output/snapshot_'+str(snap_num).zfill(3)+'.'+str(block)+'.hdf5')
+    mass_block = f_part['PartType1']['Masses'][:]*10**10.0/h
+    pos_block = f_part['PartType1']['Coordinates'][:]*scale/h
+    vel_block = f_part['PartType1']['Velocities'][:]*np.sqrt(scale)
+    ids_block = f_part['PartType1']['ParticleIDs'][:]
 
-        part_mass = np.append(part_mass,mass_block)
-        part_pos = np.append(part_pos,pos_block,axis=0)
-        part_vel = np.append(part_vel,vel_block,axis=0)
-        part_ids = np.append(part_ids,ids_block)
-
-else:
-    f_part = h5py.File('./'+dir_file+'/output/snapshot_'+str(snap_num).zfill(3)+'.hdf5')
-    scale = f_part['Header'].attrs['Time']
-    part_mass = f_part['PartType1']['Masses'][:]*10**10.0/h
-    part_pos = f_part['PartType1']['Coordinates'][:]*scale/
-    part_vel = f_part['PartType1']['Velocities'][:]*np.sqrt(scale)
-    part_ids = f_part['PartType1']['ParticleIDs'][:]
+    part_mass = np.append(part_mass,mass_block)
+    part_pos = np.append(part_pos,pos_block,axis=0)
+    part_vel = np.append(part_vel,vel_block,axis=0)
+    part_ids = np.append(part_ids,ids_block)
 
 #"learn" the dm positions (relative to host)
 print("learning dm positions")
-nbrs = sklearn.neighbors.NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(part_pos-host_pos)
+nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(part_pos-host_pos)
 
 #now match all the stars in the halo
-NN_dist, NN_indicies = nbrs.kneighbors(stars_in_sats)
+NN_dist, NN_indicies = nbrs.kneighbors(stars_not_in_sats-host_pos)
 
 #NN_indicies is the indexes of the dark matter particles
 #I should be able to plug this into the particle IDs
@@ -144,24 +142,39 @@ NN_dist, NN_indicies = nbrs.kneighbors(stars_in_sats)
 
 print("doing a bunch of array stuff")
 ids_with_stars = part_ids[NN_indicies]
+
+###NEW CODE AS OF MARCH 30th HERE
+#
+#
+
+#What I have no is the list of every star's closest dark matter particle
+#I need to then grab all the duplicates and sum the masses for each duplicate
+#id
+
+#so search ids_with_stars for duplicates, and then sum mass_of_stars_not_in_sats
+#based on those duplicates
+
+#
+#
+#########
+
 #now I need to count the occurances of each id
 
-
 unique, counts = np.unique(ids_with_stars, return_counts=True)
-#I need an algorithim here that will sum up the masses of stars who have
-#the same progenitor dark matter particle
-
 unique_sorted_ids = np.argsort(unique)
 
 #now I want to associate the counts with the FULL list of dark matter particles
 
 total_counts_list = np.zeros_like(part_ids)
 
-not_stars_mask = part_ids[(part_ids not in unique)]
+not_stars_mask = part_ids[np.in1d(part_ids, unique,invert=True)]
 counts_not = np.zeros_like(not_stars_mask)
 
-total_counts = np.merge(counts,counts_not)
-total_ids = np.merge(unique,not_stars_mask)
+print(np.sum(counts>1.))
+print(np.max(counts))
+
+total_counts = np.concatenate((counts,counts_not))
+total_ids = np.concatenate((unique,not_stars_mask))
 
 total_ids_sort_ids = np.argsort(total_ids)
 total_ids_sorted = total_ids[total_ids_sort_ids]
@@ -170,9 +183,9 @@ total_masses_sorted = part_mass[total_ids_sort_ids]
 total_pos_sorted = part_pos[total_ids_sort_ids]
 total_vel_sorted = part_vel[total_ids_sort_ids]
 
-assert total_ids_sorted==np.sort(ids_dm)
+np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
+#assert total_ids_sorted==np.sort(part_ids)
 
 #Now I have to figure out how to store this new thing
 #potentially generate a new hdf5 file that has the 
 #dark matter data in it?
-
