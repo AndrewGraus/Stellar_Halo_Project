@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+## job name
+#PBS -N correlation
+## queue: devel <= 2 hr, normal <= 8 hr, long <= 5 day
+#PBS -q normal
+#PBS -l select=1:ncpus=20:mpiprocs=1:ompthreads=1:model=ivy
+#PBS -l walltime=8:00:00
+## combine stderr & stdout into one file
+#PBS -j oe
+## output file name
+#PBS -o correlation_job.txt
+#PBS -M agraus@utexas.edu
+#PBS -m bae
+#PBS -V
+#PBS -W group_list=s1542
+
 #The purpose of this program is to take the stellar halo isolation test
 #And apply it to the dark matter particles, giving a stellar mass to 
 #halo mass ratio for the dark matter
@@ -48,10 +65,10 @@ host_vel = vel_halo[host_id]
 dist = np.linalg.norm(star_pos-host_pos,axis=1) #distance of all the stars from the host center
 dist_halo = np.linalg.norm(pos_halo-host_pos,axis=1) #distance of all halos from the host center
 
-#sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e7) #select only halos in "Rvir" and only sats
+sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e7) #select only halos in "Rvir" and only sats
 #                                                               #above a certain mass
 
-sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e10) #select only halos in "Rvir" and only sats
+#sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e10) #select only halos in "Rvir" and only sats
 
 sat_pos = pos_halo[sat_mask]
 sat_rad = radius_halo[sat_mask]
@@ -199,7 +216,7 @@ total_masses_sorted = part_mass[total_ids_sort_ids]
 total_pos_sorted = part_pos[total_ids_sort_ids]
 total_vel_sorted = part_vel[total_ids_sort_ids]
 total_M_star_sorted = total_M_star[total_ids_sort_ids]
-M_star_M_halo = np.divide(total_M_star_sorted/total_masses_sorted)
+M_star_M_halo = np.divide(total_M_star_sorted,total_masses_sorted)
 
 np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
 #assert total_ids_sorted==np.sort(part_ids)
@@ -217,7 +234,7 @@ f_write.create_dataset("PartType1/Velocities",data=total_vel_sorted)
 f_write.create_dataset("PartType1/ParticleIDs",data=total_ids_sorted)
 f_write.create_dataset("PartType1/Masses",data=total_masses_sorted)
 f_write.create_dataset("PartType1/Stellar_Masses",data=total_M_star_sorted)
-f_write.create_dataset("PartType1/Mass_Ratio",data=M-star_M_halo)
+f_write.create_dataset("PartType1/Mass_Ratio",data=M_star_M_halo)
 f_write.close()
 
 
