@@ -140,8 +140,13 @@ NN_dist, NN_indicies = nbrs.kneighbors(stars_not_in_sats-host_pos)
 #and get the ids of the DM particles each star
 #is associated with
 
+NN_indicies = np.ndarray.flatten(NN_indicies)
+
 print("doing a bunch of array stuff")
 ids_with_stars = part_ids[NN_indicies]
+
+print(NN_indicies)
+print(NN_indicies.shape)
 
 ###NEW CODE AS OF MARCH 30th HERE
 #
@@ -153,6 +158,16 @@ ids_with_stars = part_ids[NN_indicies]
 
 #so search ids_with_stars for duplicates, and then sum mass_of_stars_not_in_sats
 #based on those duplicates
+
+#lets start with a loop because it's easy
+
+total_mass_of_stars = []
+
+for select_id in np.unique(ids_with_stars):
+    a_mask = (ids_with_stars==select_id)
+    total_mass_of_stars.append(np.sum(mass_of_stars_not_in_sats[a_mask]))
+
+total_mass_of_stars = np.array(total_mass_of_stars)
 
 #
 #
