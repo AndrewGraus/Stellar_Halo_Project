@@ -161,13 +161,13 @@ print(NN_indicies.shape)
 
 #lets start with a loop because it's easy
 
-total_mass_of_stars = []
+parts_w_stars_mass = []
 
 for select_id in np.unique(ids_with_stars):
     a_mask = (ids_with_stars==select_id)
-    total_mass_of_stars.append(np.sum(mass_of_stars_not_in_sats[a_mask]))
+    parts_w_stars_mass.append(np.sum(mass_of_stars_not_in_sats[a_mask]))
 
-total_mass_of_stars = np.array(total_mass_of_stars)
+parts_w_stars_mass = np.array(parts_w_stars_mass)
 
 #
 #
@@ -190,6 +190,7 @@ print(np.max(counts))
 
 total_counts = np.concatenate((counts,counts_not))
 total_ids = np.concatenate((unique,not_stars_mask))
+total_M_star = np.concatenate((parts_w_stars_mass,counts_not))
 
 total_ids_sort_ids = np.argsort(total_ids)
 total_ids_sorted = total_ids[total_ids_sort_ids]
@@ -197,6 +198,8 @@ total_counts_sorted = total_counts[total_ids_sort_ids]
 total_masses_sorted = part_mass[total_ids_sort_ids]
 total_pos_sorted = part_pos[total_ids_sort_ids]
 total_vel_sorted = part_vel[total_ids_sort_ids]
+total_M_star_sorted = total_M_star[total_ids_sort_ids]
+M_star_M_halo = np.divide(total_M_star_sorted/total_masses_sorted)
 
 np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
 #assert total_ids_sorted==np.sort(part_ids)
@@ -204,3 +207,17 @@ np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
 #Now I have to figure out how to store this new thing
 #potentially generate a new hdf5 file that has the 
 #dark matter data in it?
+
+#Save it in a similar format to the particle data
+
+f_write = h5py.File('DM_data_w_stars_training.hdf5','w')
+
+f_write.create_dataset("PartType1/Coordinates",data=total_pos_sorted)
+f_write.create_dataset("PartType1/Velocities",data=total_vel_sorted)
+f_write.create_dataset("PartType1/ParticleIDs",data=total_ids_sorted)
+f_write.create_dataset("PartType1/Masses",data=total_masses_sorted)
+f_write.create_dataset("PartType1/Stellar_Masses",data=total_M_star_sorted)
+f_write.create_dataset("PartType1/Mass_Ratio",data=M-star_M_halo)
+f_write.close()
+
+
