@@ -93,13 +93,15 @@ print(X_train.shape[0]/1000)
 #Try a bagging regressor
 #which subsamples and then averages (I think)
 
-bg_gp = BaggingRegressor(base_estimator=GaussianProcessRegressor(),max_samples=10000)
+bg_gp = BaggingRegressor(base_estimator=GaussianProcessRegressor(),max_samples=1000)
 bg_gp.fit(X_train,mass_ratio)
 
 f.close()
 f_halo.close()
 
-f_disk = h5py.File('../z13_disk/halo_1386_Z13_disk_cat.hdf5')
+h_disk = 0.6751
+
+f_disk = h5py.File('../../z13_disk/halo_1107_Z13_disk_cat.hdf5')
 part_pos_disk = f_disk['PartType1']['Coordinates'][:]/h_disk
 part_vel_disk = f_disk['PartType1']['Velocities'][:]
 part_mass_disk = f_disk['PartType1']['Masses'][:]*1.0e10/h_disk
@@ -115,7 +117,7 @@ host_mass = halo_mass[host_id]
 host_pos = halo_pos[host_id]
 host_vel = halo_vel[host_id]
 
-X_test = np.concatenate(part_pos_disk-host_pos,part_vel_disk-host_vel)
+X_test = np.concatenate((part_pos_disk-host_pos,part_vel_disk-host_vel),axis=1)
 
 mass_ratio_trained = bg_gp.predict(X_test)
 
