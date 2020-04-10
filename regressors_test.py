@@ -78,6 +78,7 @@ mass_ratio = f['PartType1']['Mass_Ratio'][:]
 
 phase_space_coords =  np.concatenate((coords-host_pos,vel-host_vel),axis=1)
 
+
 #use this handy module to splot my phase space coords into a training and test
 #sample
 
@@ -91,11 +92,19 @@ X_train, X_test, y_train, y_test = train_test_split(phase_space_coords,mass_rati
 f.close()
 f_halo.close()
 
-#Lets test it on itself
+SVR_func = NuSVR()
+SVR_func.fit(X_train,y_train)
+mass_ratio_SVR = SVR_func.predict(X_test)
 
-#mass_ratio_LR = LR.predict(X_train)
-#mass_ratio_Lasso = LassoR.predict(X_train)
-#mass_ratio_Ridge = RidgeR.predict(X_train)
+SGD_func = SGDRegressor()
+SGD_func.fit(X_train,y_train)
+mass_ratio_SGD = SGD.predict(X_test)
 
+output_array = np.zeros((len(mass_ratio_SVR),3)
+output_array[:,0] = y_test
+output_array[:,1] = mass_ratio_SVR
+output_array[:,2] = mass_ratio_SGD
+
+np.savetxt('./outputs.txt',output_array)
 
 print('finished')
