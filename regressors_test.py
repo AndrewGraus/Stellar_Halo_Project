@@ -3,9 +3,9 @@
 ## job name
 #PBS -N Regressors_test
 ## queue: devel <= 2 hr, normal <= 8 hr, long <= 5 day
-#PBS -q normal
-#PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1:model=has
-#PBS -l walltime=8:00:00
+#PBS -q long
+#PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1:model=ivy
+#PBS -l walltime=120:00:00
 ## combine stderr & stdout into one file
 #PBS -j oe
 ## output file name
@@ -92,15 +92,19 @@ X_train, X_test, y_train, y_test = train_test_split(phase_space_coords,mass_rati
 f.close()
 f_halo.close()
 
-SVR_func = NuSVR()
+print('running Vector regressor')
+
+SVR_func = NuSVR(verbose=1)
 SVR_func.fit(X_train,y_train)
 mass_ratio_SVR = SVR_func.predict(X_test)
 
-SGD_func = SGDRegressor()
+print('running Gradient Descent regressor')
+
+SGD_func = SGDRegressor(verbose=1)
 SGD_func.fit(X_train,y_train)
 mass_ratio_SGD = SGD.predict(X_test)
 
-output_array = np.zeros((len(mass_ratio_SVR),3)
+output_array = np.zeros((len(mass_ratio_SVR),3))
 output_array[:,0] = y_test
 output_array[:,1] = mass_ratio_SVR
 output_array[:,2] = mass_ratio_SGD
