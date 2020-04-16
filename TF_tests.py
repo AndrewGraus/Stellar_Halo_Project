@@ -97,7 +97,7 @@ def build_model():
     
     return model
 
-print 'I guess we build this thing'
+print('I guess we build this thing')
 
 model = build_model()
 
