@@ -4,7 +4,7 @@
 #PBS -N TF_test
 ## queue: devel <= 2 hr, normal <= 8 hr, long <= 5 day
 #PBS -q normal
-#PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1:model=ivy
+#PBS -l select=1:ncpus=20:mpiprocs=1:ompthreads=1:model=ivy
 #PBS -l walltime=8:00:00
 ## combine stderr & stdout into one file
 #PBS -j oe
