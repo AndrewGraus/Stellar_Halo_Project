@@ -37,11 +37,17 @@ from subprocess import call
 #switch to the tf2 environment and then unload it at the end
 
 #This identifies the sytem and if its pleaides runs starts conda environ
+#I had a really clever idea to use socket to get the host name, but the
+#socket is a random series of letters and numbers unique to each
+#processor and therefore I can't do it, so I'm just going to check if
+#/nobackupp8/agraus exists then I know I'm on pleiades
 
 import socket
+from os import path
 from subprocess import call
 
-if 'pfe' in socket.gethostname():
+if path.exists('/nobackupp8/agraus/'):
+    print('running on Pleiades')
     call['module','use','-a','/swbuild/analytix/tools/modulefiles'] 
     call['module','unload','python3/Intel_Python_3.6_2018.3.222']
     call['module','load','miniconda3/v4']
