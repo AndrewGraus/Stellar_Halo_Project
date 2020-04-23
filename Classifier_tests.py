@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ## job name
-#PBS -N TF_test
+#PBS -N CL_test
 ## queue: devel <= 2 hr, normal <= 8 hr, long <= 5 day
 #PBS -q normal
 #PBS -l select=1:ncpus=20:mpiprocs=1:ompthreads=1:model=ivy
@@ -9,7 +9,7 @@
 ## combine stderr & stdout into one file
 #PBS -j oe
 ## output file name
-#PBS -o tensorflow_test.txt
+#PBS -o classifier_test.txt
 #PBS -M agraus@utexas.edu
 #PBS -m bae
 #PBS -V
@@ -93,24 +93,28 @@ def build_model():
     model = keras.Sequential([layers.Dense(64, activation='relu', 
                             input_shape=[len(X_train[0])]),
                               layers.Dense(64, activation='relu'),
-                              layers.Dense(2)
+                              layers.Dense(1)
                              ])
     
     optimizer = 'adam'
-    loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     
+    #Can use BinaryCrossentropy because I have only two labels
+    loss  = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+
     model.compile(loss=loss,optimizer=optimizer,metrics=['accuracy'])
     
     return model
 
 print('I guess we build this thing')
-
 model = build_model()
 
+print('Lets train this thing')
 EPOCHS = 10
 
+print(X_train.shape, y_train.shape)
+
 history = model.fit(X_train, y_train_classifier, epochs=EPOCHS, verbose=1)
+print('Lets test this thing')
 
 test_loss, test_acc = model.evaluate(X_test,y_test_classifier,verbose=2)
-
 print('finished')
