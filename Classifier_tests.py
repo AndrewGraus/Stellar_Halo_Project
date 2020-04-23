@@ -35,23 +35,23 @@ from subprocess import call
 #This Classifier requires the use of tf2 which is not natively implemented
 #in any of the Pleiades modules, so I need to load conda and then
 #switch to the tf2 environment and then unload it at the end
-
-#This identifies the sytem and if its pleaides runs starts conda environ
-#I had a really clever idea to use socket to get the host name, but the
-#socket is a random series of letters and numbers unique to each
-#processor and therefore I can't do it, so I'm just going to check if
-#/nobackupp8/agraus exists then I know I'm on pleiades
-
-import socket
-from os import path
-from subprocess import call
-
-if path.exists('/nobackupp8/agraus/'):
-    print('running on Pleiades')
-    call['module','use','-a','/swbuild/analytix/tools/modulefiles'] 
-    call['module','unload','python3/Intel_Python_3.6_2018.3.222']
-    call['module','load','miniconda3/v4']
-    call['source','activate','tf2']
+#
+#my attempt to use subprocess call to load the tf2 environ seems to not
+#work because call doesn't recognize module. so I need to simply make
+#a submission script for this and run it that way
+#
+#I'll leave the code blocks here for refernce in case I come back to this
+#method
+#import socket
+#from os import path
+#from subprocess import call
+#
+#if path.exists('/nobackupp8/agraus/'):
+#    print('running on Pleiades')
+#    call(['module','use','-a','/swbuild/analytix/tools/modulefiles'])
+#    call(['module','unload','python3/Intel_Python_3.6_2018.3.222'])
+#    call(['module','load','miniconda3/v4'])
+#    call(['source','activate','tf2'])
 
 f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
 
@@ -143,11 +143,10 @@ test_loss, test_acc = model.evaluate(X_test,y_test_classifier,verbose=2)
 
 model.save('saved_models/Classifier_test.h5')
 
-if 'pfe' in socket.gethostname():
-    call['conda','deactivate']
-    call['module','unload','miniconda3/v4']
-    call['module','load','python3/Intel_Python_3.6_2018.3.222']
+#if path.exists('/nobackupp8/agraus/'):
+#    call(['conda','deactivate'])
+#    call(['module','unload','miniconda3/v4'])
+#    call(['module','load','python3/Intel_Python_3.6_2018.3.222'])
 
 
 print('finished')
-
