@@ -30,7 +30,22 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from subprocess import call
 
+#This Classifier requires the use of tf2 which is not natively implemented
+#in any of the Pleiades modules, so I need to load conda and then
+#switch to the tf2 environment and then unload it at the end
+
+#This identifies the sytem and if its pleaides runs starts conda environ
+
+import socket
+from subprocess import call
+
+if 'pfe' in socket.gethostname():
+    call['module','use','-a','/swbuild/analytix/tools/modulefiles'] 
+    call['module','unload','python3/Intel_Python_3.6_2018.3.222']
+    call['module','load','miniconda3/v4']
+    call['source','activate','tf2']
 
 f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
 
@@ -117,4 +132,16 @@ history = model.fit(X_train, y_train_classifier, epochs=EPOCHS, verbose=1)
 print('Lets test this thing')
 
 test_loss, test_acc = model.evaluate(X_test,y_test_classifier,verbose=2)
+
+#now I want to save the model as an hdf5
+
+model.save('saved_models/Classifier_test.h5')
+
+if 'pfe' in socket.gethostname():
+    call['conda','deactivate']
+    call['module','unload','miniconda3/v4']
+    call['module','load','python3/Intel_Python_3.6_2018.3.222']
+
+
 print('finished')
+
