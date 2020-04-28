@@ -42,16 +42,6 @@ from subprocess import call
 #
 #I'll leave the code blocks here for refernce in case I come back to this
 #method
-#import socket
-#from os import path
-#from subprocess import call
-#
-#if path.exists('/nobackupp8/agraus/'):
-#    print('running on Pleiades')
-#    call(['module','use','-a','/swbuild/analytix/tools/modulefiles'])
-#    call(['module','unload','python3/Intel_Python_3.6_2018.3.222'])
-#    call(['module','load','miniconda3/v4'])
-#    call(['source','activate','tf2'])
 
 f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
 
@@ -109,14 +99,24 @@ y_test_classifier  = np.array((y_test!=0),dtype=int)
 
 #Now I need to build my classifier model
 #So this is two layers with 64 nodes the 3rd layer should return
-#just one of two values hence the value of 2
+#just one number between 0 and 1, but its not going to be EXACTLY
+#zero or 1 it seems to represent a probablility the more you
+#train it the sharper the transiton between zero and 1 should be
+#maybe?
 def build_model():
-    model = keras.Sequential([layers.Dense(64, activation='relu', 
-                            input_shape=[len(X_train[0])]),
-                              layers.Dense(64, activation='relu'),
-                              layers.Dense(1)
-                             ])
+    #model = keras.Sequential([layers.Dense(64, activation='relu', 
+    #                        input_shape=[len(X_train[0])]),
+    #                          layers.Dense(64, activation='relu'),
+    #                          layers.Dense(2)
+    #                         ])
     
+    model = keras.Sequential([layers.Flatten(input_shape=(6,)),
+                              layers.Dense(64, activation='relu'),
+                              layers.Dense(64, activation='relu'),
+                              layers.Dense(1, activation='sigmoid')
+                              ])
+                            
+
     optimizer = 'adam'
     
     #Can use BinaryCrossentropy because I have only two labels
@@ -130,9 +130,11 @@ print('I guess we build this thing')
 model = build_model()
 
 print('Lets train this thing')
-EPOCHS = 10
+EPOCHS = 5
 
-print(X_train.shape, y_train.shape)
+print(X_train.shape, y_train_classifier.shape)
+
+print(y_train_classifier)
 
 history = model.fit(X_train, y_train_classifier, epochs=EPOCHS, verbose=1)
 print('Lets test this thing')
@@ -141,12 +143,6 @@ test_loss, test_acc = model.evaluate(X_test,y_test_classifier,verbose=2)
 
 #now I want to save the model as an hdf5
 
-model.save('saved_models/Classifier_test.h5')
-
-#if path.exists('/nobackupp8/agraus/'):
-#    call(['conda','deactivate'])
-#    call(['module','unload','miniconda3/v4'])
-#    call(['module','load','python3/Intel_Python_3.6_2018.3.222'])
-
+model.save('saved_models/Classifier_test_sigmoid.h5')
 
 print('finished')
