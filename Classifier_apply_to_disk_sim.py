@@ -25,20 +25,23 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from subprocess import call
 
-f = h5py.File('./disk_files_full/'+data_file)
+f = h5py.File('../disk_files_full/'+data_file)
+
+h = f['Header'].attrs['HubbleParam']
+
 #halo data
 snap = f['Snapshot00152']['HaloCatalog_Rockstar']
-mass_halo = snap['Mvir'][:]
-pos_halo = snap['Center'][:]
+mass_halo = snap['Mvir'][:]/h
+pos_halo = snap['Center'][:]/h
 vel_halo = snap['Velocity']
 
 #part data
 parts = f['PartType1']
 coords = parts['Coordinates'][:]/h
 vel = parts['Velocities'][:]
-mass= parts['Masses'][:]/h
+mass= parts['Masses'][:]*1.0e10/h
 
-#identify the host                                                                                                    
+#identify the host                                                                                                   
 host_id = np.argmax(mass_halo)
 host_mass = mass_halo[host_id]
 host_pos = pos_halo[host_id]
@@ -55,11 +58,5 @@ model_output = model.predict(phase_space_coords)
 
 print(model_output)
 #now I want to save the model as an hdf5
-
-#if path.exists('/nobackupp8/agraus/'):
-#    call(['conda','deactivate'])
-#    call(['module','unload','miniconda3/v4'])
-#    call(['module','load','python3/Intel_Python_3.6_2018.3.222'])
-
 
 print('finished')
