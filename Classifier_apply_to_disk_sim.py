@@ -25,7 +25,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from subprocess import call
 
-f = h5py.File('../disk_files_full/'+data_file)
+f = h5py.File('/home5/agraus/data/disk_runs/z13_disk/halo_1107_Z13_disk_cat.hdf5')
 
 h = f['Header'].attrs['HubbleParam']
 
@@ -33,13 +33,14 @@ h = f['Header'].attrs['HubbleParam']
 snap = f['Snapshot00152']['HaloCatalog_Rockstar']
 mass_halo = snap['Mvir'][:]/h
 pos_halo = snap['Center'][:]/h
-vel_halo = snap['Velocity']
+vel_halo = snap['Velocity'][:]
 
 #part data
 parts = f['PartType1']
 coords = parts['Coordinates'][:]/h
 vel = parts['Velocities'][:]
 mass= parts['Masses'][:]*1.0e10/h
+ids = parts['ParticleIDs'][:]
 
 #identify the host                                                                                                   
 host_id = np.argmax(mass_halo)
@@ -54,9 +55,25 @@ f.close()
 
 print('loading classifier model')
 
+model = tf.keras.models.load_model('./saved_models/Classifier_test_sigmoid.h5')
+
+print('applying model to data')
+
 model_output = model.predict(phase_space_coords)
 
-print(model_output)
 #now I want to save the model as an hdf5
+
+#Now I need to output the data
+#I guess I could output another file that has the particle data from part 2, but JUST the
+#particle data
+
+print('saving output')
+
+f_write = h5py.File('./halo_1107_Z13_particles.hdf5')
+f_write.create_dataset("PartType1/Coordinates",data=coords)
+f_write.create_dataset("PartType1/Velocities",data=vel)
+f_write.create_dataset("PartType1/ParticleIDs",data=ids)
+f_write.create_dataset("PartType1/Masses",data=mass)
+f_write.create_dataset("PartType1/Mass_Ratio",data=model_output)
 
 print('finished')
