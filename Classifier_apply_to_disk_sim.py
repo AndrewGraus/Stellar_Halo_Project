@@ -32,14 +32,14 @@ h = f['Header'].attrs['HubbleParam']
 #halo data
 snap = f['Snapshot00152']['HaloCatalog_Rockstar']
 mass_halo = snap['Mvir'][:]/h
-pos_halo = snap['Center'][:]/h
+pos_halo = snap['Center'][:]*1000.0/h
 vel_halo = snap['Velocity'][:]
 
 #part data
 parts = f['PartType1']
-coords = parts['Coordinates'][:]/h
+coords = parts['Coordinates'][:]
 vel = parts['Velocities'][:]
-mass= parts['Masses'][:]*1.0e10/h
+mass= parts['Masses'][:]
 ids = parts['ParticleIDs'][:]
 
 #identify the host                                                                                                   
