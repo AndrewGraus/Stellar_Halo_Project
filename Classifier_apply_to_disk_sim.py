@@ -48,6 +48,11 @@ host_mass = mass_halo[host_id]
 host_pos = pos_halo[host_id]
 host_vel = vel_halo[host_id]
 
+print(host_id)
+print(host_mass)
+print(host_pos)
+print(host_vel)
+
 #check that I trained on cosmology corrected coordinates
 phase_space_coords =  np.concatenate((coords-host_pos,vel-host_vel),axis=1)
 
@@ -55,7 +60,7 @@ f.close()
 
 print('loading classifier model')
 
-model = tf.keras.models.load_model('./saved_models/Classifier_test_sigmoid.h5')
+model = tf.keras.models.load_model('./saved_models/Classifier_biased_sigmoid.h5')
 
 print('applying model to data')
 
@@ -66,6 +71,9 @@ model_output = model.predict(phase_space_coords)
 #Now I need to output the data
 #I guess I could output another file that has the particle data from part 2, but JUST the
 #particle data
+
+print(model_output)
+print(np.sum(model_output>0.0))
 
 print('saving output')
 
