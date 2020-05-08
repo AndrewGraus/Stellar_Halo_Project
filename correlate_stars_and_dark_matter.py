@@ -237,12 +237,12 @@ np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
 
 #I guess I should dump a png of what this looks like?
 train_set_mask = M_star_M_halo>0.0
-train_coords = coords[train_set_mask]
+train_coords = total_pos_sorted[train_set_mask]
 
 
-plt.scatter(total_pos_sorted[:,0][train_set_mask][::100]-host_pos[0],
-            total_pos_sorted[:,1][train_set_mask][::100]-host_pos[1],marker='.',s=0.001)
-plt.savefig('./test_pos.png',bbox_inches='tight')
+#plt.scatter(total_pos_sorted[:,0][train_set_mask][::100]-host_pos[0],
+#            total_pos_sorted[:,1][train_set_mask][::100]-host_pos[1],marker='.',s=0.001)
+#plt.savefig('./test_pos.png',bbox_inches='tight')
 
 #Save it in a similar format to the particle data
 
