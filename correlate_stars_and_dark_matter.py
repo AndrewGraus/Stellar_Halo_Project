@@ -169,11 +169,9 @@ tree = cKDTree(part_pos-host_pos)
 
 NN_dist, NN_indicies = tree.query(stars_not_in_sats-host_pos, k = 1)
 
+#I think the sorting is the issue
 print("doing a bunch of array stuff")
 ids_with_stars = part_ids[NN_indicies]
-
-print(NN_indicies)
-print(NN_indicies.shape)
 
 ###NEW CODE AS OF MARCH 30th HERE
 #
@@ -195,65 +193,35 @@ for select_id in np.unique(ids_with_stars):
     parts_w_stars_mass.append(np.sum(mass_of_stars_not_in_sats[a_mask]))
 
 parts_w_stars_mass = np.array(parts_w_stars_mass)
+parts_wo_stars_mass = np.zeros_like(ids_without_stars)
 
-#
-#
-#########
+ids_with_stars_mask = np.in1d(part_ids,ids_with_stars)
+ids_without_stars = part_ids[~ids_with_stars_mask]
 
-#now I need to count the occurances of each id
+pos_with_stars = part_pos[ids_with_stars_mask]
+pos_without_stars = part_pos[~ids_with_stars_mask]
 
-unique, counts = np.unique(ids_with_stars, return_counts=True)
-unique_sorted_ids = np.argsort(unique)
+vel_with_stars = part_vel[ids_with_stars_mask]
+vel_without_stars = part_vel[~ids_with_stars_mask]
 
-#now I want to associate the counts with the FULL list of dark matter particles
+mass_with_stars = part_mass[ids_with_stars_mask]
+mass_without_stars = part_mass[~ids_with_stars_mask]
 
-total_counts_list = np.zeros_like(part_ids)
-
-not_stars_mask = part_ids[np.in1d(part_ids, unique,invert=True)]
-counts_not = np.zeros_like(not_stars_mask)
-
-print(np.sum(counts>1.))
-print(np.max(counts))
-
-total_counts = np.concatenate((counts,counts_not))
-total_ids = np.concatenate((unique,not_stars_mask))
-total_M_star = np.concatenate((parts_w_stars_mass,counts_not))
-
-total_ids_sort_ids = np.argsort(total_ids)
-total_ids_sorted = total_ids[total_ids_sort_ids]
-total_counts_sorted = total_counts[total_ids_sort_ids]
-total_masses_sorted = part_mass[total_ids_sort_ids]
-total_pos_sorted = part_pos[total_ids_sort_ids]
-total_vel_sorted = part_vel[total_ids_sort_ids]
-total_M_star_sorted = total_M_star[total_ids_sort_ids]
-M_star_M_halo = np.divide(total_M_star_sorted,total_masses_sorted)
-
-np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
-#assert total_ids_sorted==np.sort(part_ids)
-
-#Now I have to figure out how to store this new thing
-#potentially generate a new hdf5 file that has the 
-#dark matter data in it?
-
-#I guess I should dump a png of what this looks like?
-train_set_mask = M_star_M_halo>0.0
-train_coords = total_pos_sorted[train_set_mask]
-
-
-#plt.scatter(total_pos_sorted[:,0][train_set_mask][::100]-host_pos[0],
-#            total_pos_sorted[:,1][train_set_mask][::100]-host_pos[1],marker='.',s=0.001)
-#plt.savefig('./test_pos.png',bbox_inches='tight')
+total_ids = np.append(ids_with_stars,ids_without_stars)
+total_pos = np.append(pos_with_stars,pos_without_stars,axis=0)
+total_vel = np.append(vel_with_stars,vel_without_stars,axis=0)
+total_mass = np.append(mass_with_stars,mass_without_stars)
+total_M_star = np.append(parts_w_stars_mass,parts_wo_stars_mass)
 
 #Save it in a similar format to the particle data
 
 f_write = h5py.File('DM_data_w_stars_training.hdf5','w')
 
-f_write.create_dataset("PartType1/Coordinates",data=total_pos_sorted)
-f_write.create_dataset("PartType1/Velocities",data=total_vel_sorted)
-f_write.create_dataset("PartType1/ParticleIDs",data=total_ids_sorted)
-f_write.create_dataset("PartType1/Masses",data=total_masses_sorted)
-f_write.create_dataset("PartType1/Stellar_Masses",data=total_M_star_sorted)
-f_write.create_dataset("PartType1/Mass_Ratio",data=M_star_M_halo)
+f_write.create_dataset("PartType1/Coordinates",data=total_pos)
+f_write.create_dataset("PartType1/Velocities",data=total_vel)
+f_write.create_dataset("PartType1/ParticleIDs",data=total_ids)
+f_write.create_dataset("PartType1/Masses",data=total_mass)
+f_write.create_dataset("PartType1/Stellar_Masses",data=total_M_star)
 f_write.close()
 
 
