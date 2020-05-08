@@ -34,9 +34,10 @@
 
 import numpy as np
 import h5py
+import matplotlib.pyplot as plt
 
 from sklearn.neighbors import NearestNeighbors
-
+from scipy.spatial import cKDTree
 #step one: Isolate the stellar halo
 
 h = 0.702
@@ -114,13 +115,6 @@ mass_of_stars_not_in_sats = star_mass[dwarf_dist_mask_tot_bool&(dist<300.0)&(dis
 #nearest neighbors count then assign mass to the DM particle based on that
 #algorithm
 
-
-#Load full paticle data
-#f_part = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.hdf5')
-
-#pos_dm = f_part['PartType1']['Coordinates'][:]/h
-#ids_dm = f_part['PartType1']['ParticleIDs'][:]
-
 snap_num = 600
 
 print("loading up DM data")
@@ -147,17 +141,33 @@ for block in range(4):
 
 #"learn" the dm positions (relative to host)
 print("learning dm positions")
-nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(part_pos-host_pos)
 
+########Nearest Neighbors Block#########
+#Update May 7th, for some reason NN gives weird results, assigns things in 
+#random chuncks throughout the simulation volume, I'm not sure what the issue is
+#
+#nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(part_pos-host_pos)
 #now match all the stars in the halo
-NN_dist, NN_indicies = nbrs.kneighbors(stars_not_in_sats-host_pos)
-
+#NN_dist, NN_indicies = nbrs.kneighbors(stars_not_in_sats-host_pos)
 #NN_indicies is the indexes of the dark matter particles
 #I should be able to plug this into the particle IDs
 #and get the ids of the DM particles each star
 #is associated with
+#NN_indicies = np.ndarray.flatten(NN_indicies)
 
-NN_indicies = np.ndarray.flatten(NN_indicies)
+#########KD tree block#######
+#scipy's kd_tree seems to do a similar thing and works a similar way
+#where you construct a tree with the data, and then query it to
+#find the kth nearest neighbors
+#
+#returns d, i = tree.query(X, k = 1)
+#d is the distance
+#i is the index of the nearest neighbor in X
+
+#construct the tree from the DM particles
+tree = cKDTree(part_pos-host_pos)
+
+NN_dist, NN_indicies = tree.query(stars_not_in_sats-host_pos, k = 1)
 
 print("doing a bunch of array stuff")
 ids_with_stars = part_ids[NN_indicies]
@@ -224,6 +234,15 @@ np.testing.assert_almost_equal(total_ids_sorted,np.sort(part_ids))
 #Now I have to figure out how to store this new thing
 #potentially generate a new hdf5 file that has the 
 #dark matter data in it?
+
+#I guess I should dump a png of what this looks like?
+train_set_mask = M_star_M_halo>0.0
+train_coords = coords[train_set_mask]
+
+
+plt.scatter(total_pos_sorted[:,0][train_set_mask][::100]-host_pos[0],
+            total_pos_sorted[:,1][train_set_mask][::100]-host_pos[1],marker='.',s=0.001)
+plt.savefig('./test_pos.png',bbox_inches='tight')
 
 #Save it in a similar format to the particle data
 
