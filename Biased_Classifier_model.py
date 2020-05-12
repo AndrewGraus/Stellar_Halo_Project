@@ -67,7 +67,7 @@ f = h5py.File('DM_data_w_stars_training.hdf5')
 
 coords = f['PartType1']['Coordinates'][:]
 vel = f['PartType1']['Velocities'][:]
-mass_ratio = f['PartType1']['Mass_Ratio'][:]
+M_star = f['PartType1']['Stellar_Masses'][:]
 
 #I think I need to merge coords and vel into an array
 
@@ -79,14 +79,14 @@ gal_select = (dist<100.0)
 
 diff_coord_gal = diff_coord[gal_select]
 diff_vel_gal = diff_vel[gal_select]
-mass_ratio_gal = mass_ratio[gal_select]
+M_star_gal = M_star[gal_select]
 
 phase_space_coords =  np.concatenate((diff_coord_gal,diff_vel_gal),axis=1)
 
 #use this handy module to splot my phase space coords into a training and test
 #sample
 
-X_train, X_test, y_train, y_test = train_test_split(phase_space_coords,mass_ratio_gal,
+X_train, X_test, y_train, y_test = train_test_split(phase_space_coords,M_star_gal,
                                                     test_size=0.8,random_state=102)
 
 #Some simple linear regressors (These are too simple)

@@ -56,6 +56,9 @@ print(host_vel)
 #check that I trained on cosmology corrected coordinates
 phase_space_coords =  np.concatenate((coords-host_pos,vel-host_vel),axis=1)
 
+print(np.mean(phase_space_coords[:,0]),np.mean(phase_space_coords[:,1]),np.mean(phase_space_coords[:,2])
+      ,np.mean(phase_space_coords[:,3]),np.mean(phase_space_coords[:,4]),np.mean(phase_space_coords[:,5]))
+
 f.close()
 
 print('loading classifier model')
