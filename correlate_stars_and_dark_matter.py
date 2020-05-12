@@ -173,6 +173,9 @@ NN_dist, NN_indicies = tree.query(stars_not_in_sats-host_pos, k = 1)
 print("doing a bunch of array stuff")
 ids_with_stars = part_ids[NN_indicies]
 
+star_ref_mask = np.in1d(part_ids,ids_with_stars)
+ids_without_stars = part_ids[~star_ref_mask]
+
 ###NEW CODE AS OF MARCH 30th HERE
 #
 #
