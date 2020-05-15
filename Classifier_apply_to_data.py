@@ -71,7 +71,7 @@ y_train_classifier = np.array((y_train!=0),dtype=int)
 y_test_classifier  = np.array((y_test!=0),dtype=int)
 
 #now I can load up the model I've already trained
-model = tf.keras.models.load_model('saved_models/Classifier_test.h5')
+model = tf.keras.models.load_model('saved_models/Classifier_test_sigmoid.h5')
 
 test_loss, test_acc = model.evaluate(X_test,y_test_classifier,verbose=2)
 

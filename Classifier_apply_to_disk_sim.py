@@ -37,7 +37,7 @@ vel_halo = snap['Velocity'][:]
 
 #part data
 parts = f['PartType1']
-coords = parts['Coordinates'][:]
+coords = parts['Coordinates'][:]/h
 vel = parts['Velocities'][:]
 mass= parts['Masses'][:]
 ids = parts['ParticleIDs'][:]
@@ -85,6 +85,6 @@ f_write.create_dataset("PartType1/Coordinates",data=coords)
 f_write.create_dataset("PartType1/Velocities",data=vel)
 f_write.create_dataset("PartType1/ParticleIDs",data=ids)
 f_write.create_dataset("PartType1/Masses",data=mass)
-f_write.create_dataset("PartType1/Mass_Ratio",data=model_output)
+f_write.create_dataset("PartType1/Stellar_Masses",data=model_output)
 
 print('finished')

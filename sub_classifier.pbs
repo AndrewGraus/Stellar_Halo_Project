@@ -3,13 +3,13 @@
 ## job name
 #PBS -N CL_test
 ## queue: devel <= 2 hr, normal <= 8 hr, long <= 5 day
-#PBS -q devel
+#PBS -q normal
 #PBS -l select=1:ncpus=20:mpiprocs=1:ompthreads=1:model=ivy
-#PBS -l walltime=2:00:00
+#PBS -l walltime=8:00:00
 ## combine stderr & stdout into one file
 #PBS -j oe
 ## output file name
-#PBS -o classifier_test.txt
+#PBS -o apply_to_sim.txt
 #PBS -M agraus@utexas.edu
 #PBS -m bae
 #PBS -V
@@ -24,7 +24,9 @@ source activate tf2
 #run python script
 
 #python Classifier_tests.py > class.out
-python Classifier_apply_to_data.py > apply_to_data.out
+#python Classifier_apply_to_data.py > apply_to_data.out
+python Classifier_apply_to_disk_sim.py > apply_to_disk.out
+#python Biased_Classifier_model.py > apply_to_disk.out
 
 conda deactivate
 module unload miniconda3/v4

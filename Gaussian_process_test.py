@@ -93,7 +93,7 @@ print(X_train.shape[0]/1000)
 #Try a bagging regressor
 #which subsamples and then averages (I think)
 
-bg_gp = BaggingRegressor(base_estimator=GaussianProcessRegressor(),max_samples=1000)
+bg_gp = BaggingRegressor(base_estimator=GaussianProcessRegressor(),n_estimators=1000,max_samples=12,bootstrap=False,verbose=True)
 bg_gp.fit(X_train,mass_ratio)
 
 f.close()
@@ -120,6 +120,8 @@ host_vel = halo_vel[host_id]
 X_test = np.concatenate((part_pos_disk-host_pos,part_vel_disk-host_vel),axis=1)
 
 mass_ratio_trained = bg_gp.predict(X_test)
+
+print(mass_ratio_trained)
 
 #okay now output the data to a file
 

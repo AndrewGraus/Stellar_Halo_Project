@@ -101,7 +101,7 @@ print('I guess we build this thing')
 
 model = build_model()
 
-EPOCHS = 100
+EPOCHS = 5
 
 history = model.fit(X_train, y_train, epochs=EPOCHS, verbose=1)
 
@@ -110,7 +110,7 @@ mass_ratio_tf = model.predict(X_test)
 
 output_array = np.zeros((len(mass_ratio_tf),2))
 output_array[:,0] = y_test
-output_array[:,1] = mass_ratio_tf
+output_array[:,1] = np.ndarray.flatten(mass_ratio_tf)
 
 np.savetxt('./outputs_tf.txt',output_array)
 
