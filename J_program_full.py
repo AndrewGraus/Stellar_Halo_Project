@@ -70,8 +70,6 @@ def Calc_average_L_shift(coordinates,masses,velocities):
     import numpy as np
     import h5py, re, os
     from math import log10
-    from astropy.cosmology import FlatLambdaCDM
-    from andrew_hydro_sim_modules.simple_tools import get_distance_vector, get_distance
 
     coord_mod = coordinates
     mass_mod = masses
@@ -91,8 +89,6 @@ def Rotate_to_z_axis(coordinates,velocities,rotation_axis):
     import numpy as np
     import h5py, re, os
     from math import log10
-    from astropy.cosmology import FlatLambdaCDM
-    from andrew_hydro_sim_modules.simple_tools import get_distance_vector, get_distance
     #Okay I want to take in a "z" axis, and then rotate the
     #coordinates so that that is the z axis
     #then calculate velocity vectors in that frame and
@@ -119,13 +115,12 @@ def principle_axes(coordinates,masses,rad,center=None):
     import numpy as np
     import h5py, re, os
     from math import log10
-    from astropy.cosmology import FlatLambdaCDM
-    from andrew_hydro_sim_modules.simple_tools import get_distance_vector, get_distance
+    #from andrew_hydro_sim_modules.simple_tools import get_distance_vector, get_distance
 
     if center == None:
         dm_dist_val = np.linalg.norm(coordinates,axis=1)
     else:    
-        dm_dist_val = get_distance(coordinates, center)
+        dm_dist_val = np.linalg.norm(coordinates-center,axis=1)
 
     dist_mask = (dm_dist_val<=rad)
     coord_mod = coordinates[dist_mask]
@@ -134,7 +129,7 @@ def principle_axes(coordinates,masses,rad,center=None):
     if center == None:
         dm_dist = coord_mod
     else:
-        dm_dist = get_distance_vector(coord_mod, center)
+        dm_dist = np.linalg.norm(coord_mod-center,axis=1)
     
     weights = mass_mod/np.median(mass_mod)
 
@@ -198,24 +193,34 @@ host_mass = mass_halo[host_id]
 host_pos_train = pos_halo_train[host_id]
 host_vel_train = vel_halo_train[host_id]
 
-f_parts = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.hdf5')
+star_coords = np.empty((0,3))
+star_vel = np.empty((0,3))
+star_mass = np.empty((0))
 
-f_stars = f_parts['PartType4']
+gas_coords = np.empty((0,3))
+gas_vel = np.empty((0,3))
+gas_mass = np.empty((0))
 
-star_coords = f_stars['Coordinates'][:]/h
-star_vel = f_stars['Velocities'][:]
-star_mass = f_stars['Masses'][:]*1.0e10/h
+dm_coords = np.empty((0,3))
+dm_mass = np.empty((0))
 
-f_gas = f_parts['PartType0']
+for ii in range(4):
+    f_parts = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.'+str(ii)+'.hdf5')
 
-gas_coords = f_gas['Coordinates'][:]/h
-gas_vel = f_gas['Velocities'][:]
-gas_mass = f_gas['Masses'][:]*1.0e10/h
+    f_stars = f_parts['PartType4']
 
-f_dm = f_parts['PartType1']
+    star_coords = np.append(star_coords,f_stars['Coordinates'][:]/h,axis=0)
+    star_vel = np.append(star_vel,f_stars['Velocities'][:],axis=0)
+    star_mass = np.append(star_mass,f_stars['Masses'][:]*1.0e10/h)
 
-dm_coords = f_dm['Coordinates'][:]/h
-dm_mass = f_dm['Masses'][:]*1.0e10/h
+    f_gas = f_parts['PartType0']
+    gas_coords = np.append(gas_coords,f_gas['Coordinates'][:]/h,axis=0)
+    gas_vel = np.append(gas_vel,f_gas['Velocities'][:],axis=0)
+    gas_mass = np.append(gas_mass,f_gas['Masses'][:]*1.0e10/h)
+
+    f_dm = f_parts['PartType1']
+    dm_coords = np.append(dm_coords,f_dm['Coordinates'][:]/h,axis=0)
+    dm_mass = np.append(dm_mass,f_dm['Masses'][:]*1.0e10/h)
 
 #first center coordinates 
 coord_diff = star_coords-host_pos_train
@@ -228,7 +233,6 @@ dist = np.linalg.norm(coord_diff,axis=1)
 dist_gas =np.linalg.norm(coord_diff_gas,axis=1)
 dist_dm =np.linalg.norm(coord_diff_dm,axis=1)
 
-#m_prof_bins = np.linspace(0.0,1000.0,5000)
 m_prof_bins = np.logspace(-4.0,3.5,5000)
 
 mass_profile_c, mpbins = np.histogram(dist,weights=star_mass,bins=m_prof_bins)
@@ -251,9 +255,11 @@ galaxy_mask = (dist<50.0)
 coord_diff_gal = coord_diff[galaxy_mask]
 vel_diff_gal = vel_diff[galaxy_mask]
 
+L_vec =  Calc_average_L_shift(coord_diff[galaxy_mask],star_mass[galaxy_mask],vel_diff[galaxy_mask])
+
+part_rotate, vel_rotate =  Rotate_to_z_axis(coord_diff,vel_diff,L_vec)
 
 ang_mom_rotated = np.cross(part_rotate,vel_rotate,axis=1) #kpc*km/s
-
 ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask]
 
 G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
@@ -293,6 +299,6 @@ for ii in range(len(coord_diff_gal))[::10000]:
 j_c_list = np.array(j_c_list)
 ang_mom_list = np.array(ang_mom_list)
 
-epsilon = np.divide(ang_mom_list,j_c_list)
+epsilon = np.divide(ang_mom_list[:,2],j_c_list)
 
 np.savetxt('./j_c_list.txt',epsilon)
