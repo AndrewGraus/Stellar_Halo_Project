@@ -196,6 +196,7 @@ host_vel_train = vel_halo_train[host_id]
 star_coords = np.empty((0,3))
 star_vel = np.empty((0,3))
 star_mass = np.empty((0))
+star_ids = np.empty((0))
 
 gas_coords = np.empty((0,3))
 gas_vel = np.empty((0,3))
@@ -212,6 +213,7 @@ for ii in range(4):
     star_coords = np.append(star_coords,f_stars['Coordinates'][:]/h,axis=0)
     star_vel = np.append(star_vel,f_stars['Velocities'][:],axis=0)
     star_mass = np.append(star_mass,f_stars['Masses'][:]*1.0e10/h)
+    star_ids = np.append(star_ids,f_stars['ParticleIDs'][:])
 
     f_gas = f_parts['PartType0']
     gas_coords = np.append(gas_coords,f_gas['Coordinates'][:]/h,axis=0)
@@ -268,7 +270,27 @@ j_c_list, ang_mom_list = [], []
 
 print('beginning loop')
 
-for ii in range(len(coord_diff_gal))[::10000]:
+dist_gal = np.linalg.norm(coord_diff_gal,axis=1)
+tot_vel_gal = np.linalg.norm(vel_diff_gal, axis=1)
+
+KE_gal = 0.5*tot_vel_gal**2.0
+
+#I think I can use vectorize to make this more efficient
+#first define a function that does what you want to do
+#then create another function that's a vectorization of it
+#then pass it the variable you are iterating over
+def PE_integral(r):
+    return -1.0 * G * integrate.quad(lambda x: mass_profile_interp(x+1.0e-3)/x**2.0,
+                                     coord_select, 999.0, limit=250)[0]
+
+PE_int_vec = np.vectorize(PE_integral)
+PE = PE_int_vec(dist_gal)
+
+E_i = KE+PE
+
+
+
+for ii in range(len(coord_diff_gal)):
     coord_select = np.linalg.norm(coord_diff_gal[ii])
     vel_select = np.linalg.norm(vel_diff_gal[ii])
     j_z = ang_mom_rotated_gal[ii]
@@ -300,5 +322,9 @@ j_c_list = np.array(j_c_list)
 ang_mom_list = np.array(ang_mom_list)
 
 epsilon = np.divide(ang_mom_list[:,2],j_c_list)
+
+J_array = np.zeros_like((len(star_ids),2))
+j_array[:,0] = star_ids
+j_array[:,1] = epsilon
 
 np.savetxt('./j_c_list.txt',epsilon)
