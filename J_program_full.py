@@ -279,49 +279,32 @@ KE_gal = 0.5*tot_vel_gal**2.0
 #first define a function that does what you want to do
 #then create another function that's a vectorization of it
 #then pass it the variable you are iterating over
+print('vectorizing PE integral')
+
 def PE_integral(r):
     return -1.0 * G * integrate.quad(lambda x: mass_profile_interp(x+1.0e-3)/x**2.0,
-                                     coord_select, 999.0, limit=250)[0]
+                                     r, 999.0, limit=250)[0]
 
 PE_int_vec = np.vectorize(PE_integral)
 PE = PE_int_vec(dist_gal)
 
-E_i = KE+PE
+assert KE.shape==PE.shape
 
+E_vec = KE+PE
+print('vectorizing r_c solver')
 
-
-for ii in range(len(coord_diff_gal)):
-    coord_select = np.linalg.norm(coord_diff_gal[ii])
-    vel_select = np.linalg.norm(vel_diff_gal[ii])
-    j_z = ang_mom_rotated_gal[ii]
-    
-    KE = 0.5*vel_select**2.0 #in km^2/s^2
-    PE = -1.0 * G * integrate.quad(lambda x: mass_profile_interp(x+1.0e-3)/x**2.0,
-                                   coord_select, 999.0, limit=250)[0]
-    
-    E_i = KE+PE
-    
-    if coord_select<0.0:
-        print('There is a problem here, distance is {}'.format(coord_select))
-        
-    func = lambda x : E_i - G * (mass_profile_interp(x)/(2.0*x) -
+def r_c_solver(E_i,r):
+    return fsolve(lambda x : E_i - G * (mass_profile_interp(x)/(2.0*x) -
                              integrate.quad(lambda k: mass_profile_interp(abs(k)+1.0e-3)/(k+1.0e-3)**2.0, x, 999.0, 
-                                            limit=250)[0])
-    
-    try:
-        r_c = fsolve(func,coord_select)
-        j_c = np.sqrt(G * mass_profile_interp(r_c)*r_c) #km/s??
-        j_c_list.append(j_c)
-        ang_mom_list.append(j_z)
-        
-    except ValueError:
-        print(coord_select,vel_select)
-        continue
-    
-j_c_list = np.array(j_c_list)
-ang_mom_list = np.array(ang_mom_list)
+                                          limit=250)[0]),r)
+r_c_vectorize = np.vectorize(r_c_solver)
+r_c_vec = r_c_vectorize(E_vec,dist_gal)
 
-epsilon = np.divide(ang_mom_list[:,2],j_c_list)
+print('calculating j_c')
+
+j_c = np.sqrt(G * mass_profile_interp(r_c_vec)*r_c_vec)
+
+epsilon = np.divide(ang_mom_list[:,2],j_c)
 
 J_array = np.zeros_like((len(star_ids),2))
 j_array[:,0] = star_ids
