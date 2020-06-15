@@ -10,6 +10,7 @@ from sklearn.ensemble import BaggingClassifier
 import numpy as np
 import h5py
 import tensorflow as tf
+import psutil
 
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -160,6 +161,11 @@ def principle_axes(coordinates,masses,rad,center=None):
 
     return eigen_values, eigen_vectors, axis_ratios
 
+def print_memory_stats():
+    import psutil
+    mem = psutil.virtual_memory()
+    print('Memory used: {} Gb; Memory Free: {} Gb; percentage: {} '.format(mem.used/1.0e9,mem.free/1.0e9,mem.percent))
+
 #The correlation program is busted for reason that I don't quite understand
 #as far as I can tell it has to be one of 3 things
 #
@@ -177,6 +183,8 @@ def principle_axes(coordinates,masses,rad,center=None):
 #work with that
 #
 #First load the data
+
+print('loading halo data')
 
 f_halo = h5py.File('../m12i_res_7100_cdm/halo/halo_600.hdf5')
 
@@ -205,6 +213,8 @@ gas_mass = np.empty((0))
 dm_coords = np.empty((0,3))
 dm_mass = np.empty((0))
 
+print('loading particle data')
+
 for ii in range(4):
     f_parts = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.'+str(ii)+'.hdf5')
 
@@ -224,7 +234,11 @@ for ii in range(4):
     dm_coords = np.append(dm_coords,f_dm['Coordinates'][:]/h,axis=0)
     dm_mass = np.append(dm_mass,f_dm['Masses'][:]*1.0e10/h)
 
+print('particle data loaded')
+print_memory_stats()
+
 #first center coordinates 
+print('shifting coordinates and calculating distances')
 coord_diff = star_coords-host_pos_train
 coord_diff_gas = gas_coords-host_pos_train
 coord_diff_dm = dm_coords-host_pos_train
@@ -235,6 +249,8 @@ dist = np.linalg.norm(coord_diff,axis=1)
 dist_gas =np.linalg.norm(coord_diff_gas,axis=1)
 dist_dm =np.linalg.norm(coord_diff_dm,axis=1)
 
+
+print('calculating total mass profile')
 m_prof_bins = np.logspace(-4.0,3.5,5000)
 
 mass_profile_c, mpbins = np.histogram(dist,weights=star_mass,bins=m_prof_bins)
@@ -257,6 +273,7 @@ galaxy_mask = (dist<50.0)
 coord_diff_gal = coord_diff[galaxy_mask]
 vel_diff_gal = vel_diff[galaxy_mask]
 
+print('rotating coordinates')
 L_vec =  Calc_average_L_shift(coord_diff[galaxy_mask],star_mass[galaxy_mask],vel_diff[galaxy_mask])
 
 part_rotate, vel_rotate =  Rotate_to_z_axis(coord_diff,vel_diff,L_vec)
@@ -268,12 +285,13 @@ G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
 
 j_c_list, ang_mom_list = [], []
 
-print('beginning loop')
+print('calculatiing KE')
 
 dist_gal = np.linalg.norm(coord_diff_gal,axis=1)
 tot_vel_gal = np.linalg.norm(vel_diff_gal, axis=1)
 
 KE_gal = 0.5*tot_vel_gal**2.0
+print_memory_stats()
 
 #I think I can use vectorize to make this more efficient
 #first define a function that does what you want to do
@@ -291,6 +309,8 @@ PE = PE_int_vec(dist_gal)
 assert KE.shape==PE.shape
 
 E_vec = KE+PE
+
+print_memory_stats()
 print('vectorizing r_c solver')
 
 def r_c_solver(E_i,r):
@@ -300,6 +320,7 @@ def r_c_solver(E_i,r):
 r_c_vectorize = np.vectorize(r_c_solver)
 r_c_vec = r_c_vectorize(E_vec,dist_gal)
 
+print_memory_stats()
 print('calculating j_c')
 
 j_c = np.sqrt(G * mass_profile_interp(r_c_vec)*r_c_vec)
@@ -311,3 +332,4 @@ j_array[:,0] = star_ids
 j_array[:,1] = epsilon
 
 np.savetxt('./j_c_list.txt',epsilon)
+print('finished')
