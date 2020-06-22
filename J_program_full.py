@@ -166,23 +166,19 @@ def print_memory_stats():
     mem = psutil.virtual_memory()
     print('Memory used: {} Gb; Memory Free: {} Gb; percentage: {} '.format(mem.used/1.0e9,mem.free/1.0e9,mem.percent))
 
-#The correlation program is busted for reason that I don't quite understand
-#as far as I can tell it has to be one of 3 things
+#Now I need to do some modifications to make this actually run
 #
-# 1) a problem with the input particles either stars or dm
-# 2) a problem with the NN algorithms
-# 3) a problem with the sorting algorithms
+#Because circular orbit energy (and also potential energy) only 
+#depend on R you can solve for E v r, just once, and then 
+#interpolate
 #
-# 1 is easy to check I just need to load up the particle data and plot it to see if it
-# looks okay:
-
-#Now it turns out my sample is very biased
-#about 1% of the dm particles have associated stellar mass
+#So what modifications do I need to make to this program:
 #
-#Apparently you can pass a bias to the network and it will
-#work with that
+#    1) Make a PE solver that just takes in r and calcualtes a grid of
+#       Phi vs r
 #
-#First load the data
+#    2) Make an interpolation function for phi and r_c?
+# 
 
 print('loading halo data')
 
@@ -270,8 +266,12 @@ mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c
 
 galaxy_mask = (dist<50.0)
 
+#use a smaller sub-sample to time
 coord_diff_gal = coord_diff[galaxy_mask][::1000]
 vel_diff_gal = vel_diff[galaxy_mask][::1000]
+
+#coord_diff_gal = coord_diff[galaxy_mask]
+#vel_diff_gal = vel_diff[galaxy_mask]
 
 print(len(coord_diff_gal))
 
@@ -305,22 +305,37 @@ def PE_integral(r):
     return -1.0 * G * integrate.quad(lambda x: mass_profile_interp(x+1.0e-3)/x**2.0,
                                      r, 999.0, limit=250)[0]
 
-PE_int_vec = np.vectorize(PE_integral)
-PE_gal = PE_int_vec(dist_gal)
+#Now I need to make a functino that will do an integral for PE for all space where
+#particles will appear
+r_grid = np.linspace(np.min(dist_gal),np.max(dist_gal)+0.10*(dist_gal),1000)
 
+#vectorize integral (quad might be faster)
+PE_int_vec = np.vectorize(PE_integral)
+PE_grid = PE_int_vec(r_grid)
+
+#save PE function to memory
+PE_function = interpolate.interp1d(r_grid,PE_grid)
+
+PE_gal = PE_function(dist_gal)
 assert KE_gal.shape==PE_gal.shape
 
-E_vec = KE_gal+PE_gal
+E_vec = KE_gal+PE_gal #total energy of every particle
 
 print_memory_stats()
 print('vectorizing r_c solver')
 
-def r_c_solver(E_i,r):
-    return fsolve(lambda x : E_i - G * (mass_profile_interp(x)/(2.0*x) -
-                             integrate.quad(lambda k: mass_profile_interp(abs(k)+1.0e-3)/(k+1.0e-3)**2.0, x, 999.0, 
-                                          limit=250)[0]),r)
-r_c_vectorize = np.vectorize(r_c_solver)
-r_c_vec = r_c_vectorize(E_vec,dist_gal)
+m_in_r = mass_profile_interp(dist_gal) #M at all r for E_circ calculation
+E_circ_grid = G*m_in_r/(2.0*r_grid) + phi_grid #Energy of a circular orbit as a function of r
+
+r_c_vec = np.interp(E_vec,E_circ_grid, r_grid) #solve for r_c given E of the non-circular orbit
+
+#Old vectorized attempt to solve for r_c
+#def r_c_solver(E_i,r):
+#    return fsolve(lambda x : E_i - G * (mass_profile_interp(x)/(2.0*x) -
+#                             integrate.quad(lambda k: mass_profile_interp(abs(k)+1.0e-3)/(k+1.0e-3)**2.0, x, 999.0, 
+#                                          limit=250)[0]),r)
+#r_c_vectorize = np.vectorize(r_c_solver)
+#r_c_vec = r_c_vectorize(E_vec,dist_gal)
 
 print_memory_stats()
 print('calculating j_c')
