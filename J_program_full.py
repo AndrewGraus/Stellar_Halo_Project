@@ -270,8 +270,10 @@ mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c
 
 galaxy_mask = (dist<50.0)
 
-coord_diff_gal = coord_diff[galaxy_mask]
-vel_diff_gal = vel_diff[galaxy_mask]
+coord_diff_gal = coord_diff[galaxy_mask][::1000]
+vel_diff_gal = vel_diff[galaxy_mask][::1000]
+
+print(len(coord_diff_gal))
 
 print('rotating coordinates')
 L_vec =  Calc_average_L_shift(coord_diff[galaxy_mask],star_mass[galaxy_mask],vel_diff[galaxy_mask])
@@ -304,11 +306,11 @@ def PE_integral(r):
                                      r, 999.0, limit=250)[0]
 
 PE_int_vec = np.vectorize(PE_integral)
-PE = PE_int_vec(dist_gal)
+PE_gal = PE_int_vec(dist_gal)
 
-assert KE.shape==PE.shape
+assert KE_gal.shape==PE_gal.shape
 
-E_vec = KE+PE
+E_vec = KE_gal+PE_gal
 
 print_memory_stats()
 print('vectorizing r_c solver')
