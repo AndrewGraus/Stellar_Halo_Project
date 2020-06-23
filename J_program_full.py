@@ -267,11 +267,12 @@ mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c
 galaxy_mask = (dist<50.0)
 
 #use a smaller sub-sample to time
-coord_diff_gal = coord_diff[galaxy_mask][::1000]
-vel_diff_gal = vel_diff[galaxy_mask][::1000]
+#coord_diff_gal = coord_diff[galaxy_mask][::1000]
+#vel_diff_gal = vel_diff[galaxy_mask][::1000]
 
-#coord_diff_gal = coord_diff[galaxy_mask]
-#vel_diff_gal = vel_diff[galaxy_mask]
+coord_diff_gal = coord_diff[galaxy_mask]
+vel_diff_gal = vel_diff[galaxy_mask]
+star_ids_gal = star_ids[galaxy_mask]
 
 print(len(coord_diff_gal))
 
@@ -281,11 +282,13 @@ L_vec =  Calc_average_L_shift(coord_diff[galaxy_mask],star_mass[galaxy_mask],vel
 part_rotate, vel_rotate =  Rotate_to_z_axis(coord_diff,vel_diff,L_vec)
 
 ang_mom_rotated = np.cross(part_rotate,vel_rotate,axis=1) #kpc*km/s
+
 ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask]
+#ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask][::1000]
 
 G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
 
-j_c_list, ang_mom_list = [], []
+#j_c_list, ang_mom_list = [], []
 
 print('calculatiing KE')
 
@@ -307,7 +310,7 @@ def PE_integral(r):
 
 #Now I need to make a functino that will do an integral for PE for all space where
 #particles will appear
-r_grid = np.linspace(np.min(dist_gal),np.max(dist_gal)+0.10*(dist_gal),1000)
+r_grid = np.linspace(np.min(dist_gal)-0.1*np.min(dist_gal),np.max(dist_gal)+0.10*np.max(dist_gal),1000)
 
 #vectorize integral (quad might be faster)
 PE_int_vec = np.vectorize(PE_integral)
@@ -324,8 +327,9 @@ E_vec = KE_gal+PE_gal #total energy of every particle
 print_memory_stats()
 print('vectorizing r_c solver')
 
-m_in_r = mass_profile_interp(dist_gal) #M at all r for E_circ calculation
-E_circ_grid = G*m_in_r/(2.0*r_grid) + phi_grid #Energy of a circular orbit as a function of r
+#m_in_r = mass_profile_interp(dist_gal) #M at all r for E_circ calculation
+m_grid = mass_profile_interp(r_grid)
+E_circ_grid = G*m_grid/(2.0*r_grid) + PE_grid #Energy of a circular orbit as a function of r
 
 r_c_vec = np.interp(E_vec,E_circ_grid, r_grid) #solve for r_c given E of the non-circular orbit
 
@@ -342,11 +346,13 @@ print('calculating j_c')
 
 j_c = np.sqrt(G * mass_profile_interp(r_c_vec)*r_c_vec)
 
-epsilon = np.divide(ang_mom_list[:,2],j_c)
+print(ang_mom_rotated_gal[:,2].shape, j_c.shape)
 
-J_array = np.zeros_like((len(star_ids),2))
-j_array[:,0] = star_ids
-j_array[:,1] = epsilon
+epsilon = np.divide(ang_mom_rotated_gal[:,2],j_c)
 
-np.savetxt('./j_c_list.txt',epsilon)
+J_array = np.zeros((len(star_ids),2))
+J_array[:,0] = star_ids_gal
+J_array[:,1] = epsilon
+
+np.savetxt('./j_c_list.txt',J_array)
 print('finished')
