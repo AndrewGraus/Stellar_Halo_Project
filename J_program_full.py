@@ -350,7 +350,7 @@ print(ang_mom_rotated_gal[:,2].shape, j_c.shape)
 
 epsilon = np.divide(ang_mom_rotated_gal[:,2],j_c)
 
-J_array = np.zeros((len(star_ids),2))
+J_array = np.zeros((len(star_ids_gal),2))
 J_array[:,0] = star_ids_gal
 J_array[:,1] = epsilon
 
