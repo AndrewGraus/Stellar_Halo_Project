@@ -264,26 +264,26 @@ force_grav = np.divide(mass_profile_total_c,m_prof_bins_plot*m_prof_bins_plot)
 
 mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c)
 
-galaxy_mask = (dist<50.0)
+#galaxy_mask = (dist<50.0)
 
 #use a smaller sub-sample to time
 #coord_diff_gal = coord_diff[galaxy_mask][::1000]
 #vel_diff_gal = vel_diff[galaxy_mask][::1000]
 
-coord_diff_gal = coord_diff[galaxy_mask]
-vel_diff_gal = vel_diff[galaxy_mask]
-star_ids_gal = star_ids[galaxy_mask]
+coord_diff_gal = coord_diff
+vel_diff_gal = vel_diff
+star_ids_gal = star_ids
 
 print(len(coord_diff_gal))
 
 print('rotating coordinates')
-L_vec =  Calc_average_L_shift(coord_diff[galaxy_mask],star_mass[galaxy_mask],vel_diff[galaxy_mask])
+L_vec =  Calc_average_L_shift(coord_diff,star_mass,vel_diff)
 
 part_rotate, vel_rotate =  Rotate_to_z_axis(coord_diff,vel_diff,L_vec)
 
 ang_mom_rotated = np.cross(part_rotate,vel_rotate,axis=1) #kpc*km/s
 
-ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask]
+ang_mom_rotated_gal = ang_mom_rotated
 #ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask][::1000]
 
 G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
@@ -353,6 +353,10 @@ epsilon = np.divide(ang_mom_rotated_gal[:,2],j_c)
 J_array = np.zeros((len(star_ids_gal),2))
 J_array[:,0] = star_ids_gal
 J_array[:,1] = epsilon
+
+f_part_star = h5py.File('../m12i_res_7100_cdm/snapshot_600.stars.hdf5')
+star_group = f_part_star['PartType4']
+dset = star_group.create_dataset("circularity",data=epsilon)
 
 np.savetxt('./j_c_list.txt',J_array)
 print('finished')
