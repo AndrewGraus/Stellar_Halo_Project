@@ -244,10 +244,15 @@ vel_diff = star_vel - host_vel_train
 dist = np.linalg.norm(coord_diff,axis=1)
 dist_gas =np.linalg.norm(coord_diff_gas,axis=1)
 dist_dm =np.linalg.norm(coord_diff_dm,axis=1)
+dist_gal = np.linalg.norm(coord_diff_gal,axis=1)
+tot_vel_gal = np.linalg.norm(vel_diff_gal, axis=1)
 
+r_grid = np.linspace(np.min(dist_gal)-0.1*np.min(dist_gal),np.max(dist_gal)+0.10*np.max(dist_gal),1000)
+
+print('max of r_grid is {}'.format(np.max(dist_gal)))
 
 print('calculating total mass profile')
-m_prof_bins = np.logspace(-4.0,3.5,5000)
+m_prof_bins = np.logspace(-4.0,np.log10(np.max(dist_gal)+0.10*np.max(dist_gal)),5000)
 
 mass_profile_c, mpbins = np.histogram(dist,weights=star_mass,bins=m_prof_bins)
 mass_profile_gas_c, mpbins  = np.histogram(dist_gas,weights=gas_mass,bins=m_prof_bins)
@@ -264,26 +269,27 @@ force_grav = np.divide(mass_profile_total_c,m_prof_bins_plot*m_prof_bins_plot)
 
 mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c)
 
-#galaxy_mask = (dist<50.0)
+galaxy_mask = (dist<400.0)
+
+coord_diff_gal = coord_diff[galaxy_mask]
+vel_diff_gal = vel_diff[galaxy_mask]
+star_ids_gal = star_ids[galaxy_mask]
+star_mass_gal = star_mass[galaxy_mask]
+coord_gal = star_coords[galaxy_mask]
+vel_gal = star_vel[galaxy_mask]
 
 #use a smaller sub-sample to time
 #coord_diff_gal = coord_diff[galaxy_mask][::1000]
 #vel_diff_gal = vel_diff[galaxy_mask][::1000]
 
-coord_diff_gal = coord_diff
-vel_diff_gal = vel_diff
-star_ids_gal = star_ids
-
 print(len(coord_diff_gal))
 
 print('rotating coordinates')
-L_vec =  Calc_average_L_shift(coord_diff,star_mass,vel_diff)
-
+L_vec =  Calc_average_L_shift(coord_diff[galaxy_mask],star_mass[galaxy_mask],vel_diff[galaxy_mask])
 part_rotate, vel_rotate =  Rotate_to_z_axis(coord_diff,vel_diff,L_vec)
-
 ang_mom_rotated = np.cross(part_rotate,vel_rotate,axis=1) #kpc*km/s
 
-ang_mom_rotated_gal = ang_mom_rotated
+ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask]
 #ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask][::1000]
 
 G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
@@ -291,9 +297,6 @@ G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
 #j_c_list, ang_mom_list = [], []
 
 print('calculatiing KE')
-
-dist_gal = np.linalg.norm(coord_diff_gal,axis=1)
-tot_vel_gal = np.linalg.norm(vel_diff_gal, axis=1)
 
 KE_gal = 0.5*tot_vel_gal**2.0
 print_memory_stats()
@@ -308,9 +311,8 @@ def PE_integral(r):
     return -1.0 * G * integrate.quad(lambda x: mass_profile_interp(x+1.0e-3)/x**2.0,
                                      r, 999.0, limit=250)[0]
 
-#Now I need to make a functino that will do an integral for PE for all space where
+#Now I need to make a function that will do an integral for PE for all space where
 #particles will appear
-r_grid = np.linspace(np.min(dist_gal)-0.1*np.min(dist_gal),np.max(dist_gal)+0.10*np.max(dist_gal),1000)
 
 #vectorize integral (quad might be faster)
 PE_int_vec = np.vectorize(PE_integral)
@@ -354,9 +356,13 @@ J_array = np.zeros((len(star_ids_gal),2))
 J_array[:,0] = star_ids_gal
 J_array[:,1] = epsilon
 
-f_part_star = h5py.File('../m12i_res_7100_cdm/snapshot_600.stars.hdf5')
-star_group = f_part_star['PartType4']
-dset = star_group.create_dataset("circularity",data=epsilon)
+f_part_star = h5py.File('../m12i_res_7100_cdm/snapshot_600.stars_with_j.hdf5')
+star_group = f_part_star.create_group('PartType4')
+dset1 = star_group.create_dataset("circularity",data=epsilon)
+dset2 = star_group.create_dataset("Coordinates",data=coord_gal)
+dset3 = star_group.create_dataset("Velocities",data=vel_gal)
+dset4 = star_group.create_dataset("Masses",data=star_mass_gal)
+dest5 = star_group.create_dataset("ParticleIDs",data=star_ids_gal)
 
 np.savetxt('./j_c_list.txt',J_array)
 print('finished')
