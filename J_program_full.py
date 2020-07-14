@@ -244,10 +244,20 @@ vel_diff = star_vel - host_vel_train
 dist = np.linalg.norm(coord_diff,axis=1)
 dist_gas =np.linalg.norm(coord_diff_gas,axis=1)
 dist_dm =np.linalg.norm(coord_diff_dm,axis=1)
+
+galaxy_mask = (dist<400.0)
+
+coord_diff_gal = coord_diff[galaxy_mask]
+vel_diff_gal = vel_diff[galaxy_mask]
+star_ids_gal = star_ids[galaxy_mask]
+star_mass_gal = star_mass[galaxy_mask]
+coord_gal = star_coords[galaxy_mask]
+vel_gal = star_vel[galaxy_mask]
+
 dist_gal = np.linalg.norm(coord_diff_gal,axis=1)
 tot_vel_gal = np.linalg.norm(vel_diff_gal, axis=1)
 
-r_grid = np.linspace(np.min(dist_gal)-0.1*np.min(dist_gal),np.max(dist_gal)+0.10*np.max(dist_gal),1000)
+r_grid = np.linspace(np.min(dist_gal)-0.1*np.min(dist_gal),np.max(dist_gal)+0.20*np.max(dist_gal),1000)
 
 print('max of r_grid is {}'.format(np.max(dist_gal)))
 
@@ -269,14 +279,7 @@ force_grav = np.divide(mass_profile_total_c,m_prof_bins_plot*m_prof_bins_plot)
 
 mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c)
 
-galaxy_mask = (dist<400.0)
-
-coord_diff_gal = coord_diff[galaxy_mask]
-vel_diff_gal = vel_diff[galaxy_mask]
-star_ids_gal = star_ids[galaxy_mask]
-star_mass_gal = star_mass[galaxy_mask]
-coord_gal = star_coords[galaxy_mask]
-vel_gal = star_vel[galaxy_mask]
+print(np.max(m_prof_bins_plot),np.max(r_grid))
 
 #use a smaller sub-sample to time
 #coord_diff_gal = coord_diff[galaxy_mask][::1000]
