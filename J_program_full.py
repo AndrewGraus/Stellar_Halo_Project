@@ -231,7 +231,6 @@ for ii in range(4):
     dm_mass = np.append(dm_mass,f_dm['Masses'][:]*1.0e10/h)
 
 print('particle data loaded')
-print_memory_stats()
 
 #first center coordinates 
 print('shifting coordinates and calculating distances')
@@ -257,12 +256,11 @@ vel_gal = star_vel[galaxy_mask]
 dist_gal = np.linalg.norm(coord_diff_gal,axis=1)
 tot_vel_gal = np.linalg.norm(vel_diff_gal, axis=1)
 
-r_grid = np.linspace(np.min(dist_gal)-0.1*np.min(dist_gal),np.max(dist_gal)+0.20*np.max(dist_gal),1000)
-
-print('max of r_grid is {}'.format(np.max(dist_gal)))
+r_grid = np.linspace(np.min(dist_gal),np.max(dist_gal),1000)
 
 print('calculating total mass profile')
-m_prof_bins = np.logspace(-4.0,np.log10(np.max(dist_gal)+0.10*np.max(dist_gal)),5000)
+#Interpolation must go out to 1000 for the intergal (which goes to 999)
+m_prof_bins = np.logspace(-4.0,3.0,5000)
 
 mass_profile_c, mpbins = np.histogram(dist,weights=star_mass,bins=m_prof_bins)
 mass_profile_gas_c, mpbins  = np.histogram(dist_gas,weights=gas_mass,bins=m_prof_bins)
@@ -279,7 +277,8 @@ force_grav = np.divide(mass_profile_total_c,m_prof_bins_plot*m_prof_bins_plot)
 
 mass_profile_interp = interpolate.interp1d(m_prof_bins_plot,mass_profile_total_c)
 
-print(np.max(m_prof_bins_plot),np.max(r_grid))
+#print("interpolation range {} to {}".format(np.min(m_prof_bins_plot),np.max(m_prof_bins_plot)))
+#print("submitted points range {} to {}".format(np.min(r_grid),np,max(r_grid)))
 
 #use a smaller sub-sample to time
 #coord_diff_gal = coord_diff[galaxy_mask][::1000]
@@ -293,12 +292,8 @@ part_rotate, vel_rotate =  Rotate_to_z_axis(coord_diff,vel_diff,L_vec)
 ang_mom_rotated = np.cross(part_rotate,vel_rotate,axis=1) #kpc*km/s
 
 ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask]
-#ang_mom_rotated_gal = ang_mom_rotated[galaxy_mask][::1000]
 
 G = 4.30091e-6 #kpc (km/s)^2 M_sun^-1
-
-#j_c_list, ang_mom_list = [], []
-
 print('calculatiing KE')
 
 KE_gal = 0.5*tot_vel_gal**2.0
