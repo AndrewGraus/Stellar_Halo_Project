@@ -261,7 +261,6 @@ r_grid = np.linspace(np.min(dist_gal),np.max(dist_gal),1000)
 print('calculating total mass profile')
 #Interpolation must go out to 1000 for the intergal (which goes to 999)
 m_prof_bins = np.logspace(-4.0,3.0,5000)
-
 mass_profile_c, mpbins = np.histogram(dist,weights=star_mass,bins=m_prof_bins)
 mass_profile_gas_c, mpbins  = np.histogram(dist_gas,weights=gas_mass,bins=m_prof_bins)
 mass_profile_dm_c, mpbins  = np.histogram(dist_dm,weights=dm_mass,bins=m_prof_bins)
@@ -307,7 +306,16 @@ print('vectorizing PE integral')
 
 def PE_integral(r):
     return -1.0 * G * integrate.quad(lambda x: mass_profile_interp(x+1.0e-3)/x**2.0,
-                                     r, 999.0, limit=250)[0]
+                                     r, 900.0, limit=250)[0]
+
+for r_select in r_grid:
+    print(r_select)
+    m_at_r = mass_profile_interp(r_select)
+    PE_int = PE_integral(r_select)
+
+print('done with testing m_prof')
+
+
 
 #Now I need to make a function that will do an integral for PE for all space where
 #particles will appear
