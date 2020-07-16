@@ -32,6 +32,13 @@
 # I had the original idea to just save the number of stars per halo
 # but the mass per star particle is variable
 
+#Note for July 7th 2020:
+# beginning modification to add circularity cut to the program
+# what do I need to do?
+# 1) load j data
+# 2) make an array fills in particles that don't have a j_value
+# 3) use that data to make the cut and then correlate
+
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
@@ -43,12 +50,14 @@ from scipy.spatial import cKDTree
 h = 0.702
 
 #First load up the stars
-f_part_star = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.stars.hdf5')
+f_part_star = h5py.File('../m12i_res_7100_cdm/snapshot_600.stars_with_j.hdf5')
 
 #assign masses and coordinates
 
 star_pos = f_part_star['PartType4']['Coordinates'][:]/h
-star_mass =  f_part_star['PartType4']['Masses'][:]*1.0e10/h
+star_mass = f_part_star['PartType4']['Masses'][:]*1.0e10/h
+star_ids = f_part_star['PartType4']['ParticleIDs'][:]
+star_epsilon = f_part_star['PartType4']['circularity'][:]
 
 #load up the halo data
 f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
@@ -91,8 +100,8 @@ for jj in range(len(sat_rad)):
 #convert this mask to booleans
 dwarf_dist_mask_tot_bool = list(map(bool,dwarf_dist_mask_tot)) #in python3 this returns a map and NOT an array
 
-stars_not_in_sats = star_pos[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>10.0)]  
-mass_of_stars_not_in_sats = star_mass[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>10.0)]
+stars_not_in_sats = star_pos[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>5.0)&(star_epsilon<0.5)]  
+mass_of_stars_not_in_sats = star_mass[dwarf_dist_mask_tot_bool&(dist<300.0)&(dist>5.0)&(star_epsilon<0.5)]
 
 #We can probably be alot more clever with this mask and select out stars that are in the actual disk
 #by masking out stuff with significant rotation instead of anything within 10 kpc of the center
