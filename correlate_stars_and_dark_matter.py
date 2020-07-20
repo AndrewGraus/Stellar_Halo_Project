@@ -50,7 +50,7 @@ from scipy.spatial import cKDTree
 h = 0.702
 
 #First load up the stars
-f_part_star = h5py.File('../m12i_res_7100_cdm/snapshot_600.stars_with_j.hdf5')
+f_part_star = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.stars_with_j.hdf5')
 
 #assign masses and coordinates
 
@@ -60,7 +60,7 @@ star_ids = f_part_star['PartType4']['ParticleIDs'][:]
 star_epsilon = f_part_star['PartType4']['circularity'][:]
 
 #load up the halo data
-f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
+f_halo = h5py.File('../m12i_res_7100_cdm/halo/halo_600.hdf5')
 pos_halo = f_halo['position'][:]
 mass_halo = f_halo['mass'][:]
 radius_halo = f_halo['radius'][:]

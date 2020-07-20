@@ -45,7 +45,7 @@ from subprocess import call
 
 print('loading data')
 
-f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
+f_halo = h5py.File('../m12i_res_7100_cdm/halo/halo_600.hdf5')
 
 pos_halo = f_halo['position'][:]
 mass_halo = f_halo['mass'][:]
