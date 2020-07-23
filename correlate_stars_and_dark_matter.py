@@ -50,12 +50,14 @@ from scipy.spatial import cKDTree
 h = 0.702
 
 #First load up the stars
+#NOTE I forgot to convert the particle parameters back to simulation units when saving
+#the j file so coordinates are in kpc NOT kpc/h and masses are already in M_sun
 f_part_star = h5py.File('../m12i_res_7100_cdm/output/snapshot_600.stars_with_j.hdf5')
 
 #assign masses and coordinates
 
-star_pos = f_part_star['PartType4']['Coordinates'][:]/h
-star_mass = f_part_star['PartType4']['Masses'][:]*1.0e10/h
+star_pos = f_part_star['PartType4']['Coordinates'][:]
+star_mass = f_part_star['PartType4']['Masses'][:]
 star_ids = f_part_star['PartType4']['ParticleIDs'][:]
 star_epsilon = f_part_star['PartType4']['circularity'][:]
 
@@ -74,6 +76,9 @@ host_vel = vel_halo[host_id]
 
 dist = np.linalg.norm(star_pos-host_pos,axis=1) #distance of all the stars from the host center
 dist_halo = np.linalg.norm(pos_halo-host_pos,axis=1) #distance of all halos from the host center
+
+print(np.sum(dist<50.0))
+print(np.min(dist))
 
 sat_mask = (dist_halo<300.0)&(dist_halo>0.0)&(mass_halo>1.0e7) #select only halos in "Rvir" and only sats
 #                                                               #above a certain mass
