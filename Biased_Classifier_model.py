@@ -45,7 +45,7 @@ from subprocess import call
 
 print('loading data')
 
-f_halo = h5py.File('../m12i_res_7100_cdm/halo_600.hdf5')
+f_halo = h5py.File('../m12i_res_7100_cdm/halo/halo_600.hdf5')
 
 pos_halo = f_halo['position'][:]
 mass_halo = f_halo['mass'][:]
@@ -81,6 +81,8 @@ diff_coord_gal = diff_coord[gal_select]
 diff_vel_gal = diff_vel[gal_select]
 M_star_gal = M_star[gal_select]
 
+print(M_star_gal)
+
 phase_space_coords =  np.concatenate((diff_coord_gal,diff_vel_gal),axis=1)
 
 #use this handy module to splot my phase space coords into a training and test
@@ -109,6 +111,8 @@ print('running tf')
 
 y_train_classifier = np.array((y_train!=0),dtype=int)
 y_test_classifier  = np.array((y_test!=0),dtype=int)
+
+print(y_train_classifier)
 
 neg, pos = np.bincount(y_train_classifier)
 initial_bias = np.log(float(pos)/float(neg))
