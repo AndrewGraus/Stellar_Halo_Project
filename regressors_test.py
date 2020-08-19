@@ -70,11 +70,7 @@ coords = f['PartType1']['Coordinates'][:]
 vel = f['PartType1']['Velocities'][:]
 mass_ratio = f['PartType1']['Mass_Ratio'][:]
 
-#1) attempt to save memory by reducing number of points
-#   remove everything outside 400 kpc (these shouldn't)
-#   factor in anyways
 
-#I think I need to merge coords and vel into an array
 
 phase_space_coords =  np.concatenate((coords-host_pos,vel-host_vel),axis=1)
 
@@ -92,7 +88,23 @@ X_train, X_test, y_train, y_test = train_test_split(phase_space_coords,mass_rati
 f.close()
 f_halo.close()
 
+f_predict = h5py.File('/Users/andrewgraus/Work/stellar_halo_project/halo_1107_Z13/halo_1107_Z13_particles.hdf5')
+
+h = 0.675
+
+coord_predict = f_predict['PartType1']['Coordinates'][:]/h
+vel_predict = f_predict['PartType1']['Velocities'][:]
+id_predict = f_predict['PartType1']['ParticleIDs'][:]
+
+host_cen = np.array([37.53820323, 34.52403051, 37.02327211])*1000.0/h
+host_vel = np.array([ 57.161152, -83.112122, -17.277088])
+
+coord_diff_predict = coord_predict - host_cen
+vel_diff_predict = vel_predict - host_vel
+
 print('running Vector regressor')
+
+X_test =  np.concatenate((coords_diff_predict,vel_diff_predict),axis=1)
 
 SVR_func = NuSVR(verbose=1)
 SVR_func.fit(X_train,y_train)
@@ -104,11 +116,16 @@ SGD_func = SGDRegressor(verbose=1)
 SGD_func.fit(X_train,y_train)
 mass_ratio_SGD = SGD.predict(X_test)
 
-output_array = np.zeros((len(mass_ratio_SVR),3))
-output_array[:,0] = y_test
-output_array[:,1] = mass_ratio_SVR
-output_array[:,2] = mass_ratio_SGD
+prediction_file = h5py.File('./regressor_results.hdf5')
+f_write.create_dataset("ParticleIDs",data=id_predict)
+f_write.create_dataset("SVR",data=mass_ratio_SVR)
+f_write.create_dataset("SGD",data=mass_ratio_SGD)
 
-np.savetxt('./outputs.txt',output_array)
+#output_array = np.zeros((len(mass_ratio_SVR),3))
+#output_array[:,0] = y_test
+#output_array[:,1] = mass_ratio_SVR
+#output_array[:,2] = mass_ratio_SGD
+
+#np.savetxt('./outputs.txt',output_array
 
 print('finished')
