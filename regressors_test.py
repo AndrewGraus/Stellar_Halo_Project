@@ -88,7 +88,7 @@ X_train, X_test, y_train, y_test = train_test_split(phase_space_coords,mass_rati
 f.close()
 f_halo.close()
 
-f_predict = h5py.File('/Users/andrewgraus/Work/stellar_halo_project/halo_1107_Z13/halo_1107_Z13_particles.hdf5')
+f_predict = h5py.File('./halo_1107_Z13_particles.hdf5')
 
 h = 0.675
 
