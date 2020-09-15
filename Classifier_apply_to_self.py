@@ -31,9 +31,9 @@ f_halo = h5py.File('../m12i_res_7100_cdm/halo/halo_600.hdf5')
 h = 0.702
 
 #halo data
-pos_halo = f_halo['position'][:]
+pos_halo = f_halo['position'][:]/h
 mass_halo = f_halo['mass'][:]
-radius_halo = f_halo['radius'][:]
+radius_halo = f_halo['radius'][:]/h
 vel_halo = f_halo['velocity'][:]
 
 #part data
