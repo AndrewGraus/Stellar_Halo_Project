@@ -12,7 +12,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from subprocess import call
 
-import tensorflow_docs as tfdocs
+#import tensorflow_docs as tfdocs
 
 #For this module it seems like you simply put in an n dimensional training array X
 #and the training answers y and then do a fit to get a function gp
@@ -46,9 +46,11 @@ host_vel = vel_halo[host_id]
 
 f = h5py.File('DM_data_w_stars_training.hdf5')
 
+dm_mass = f['PartType1']['Masses'][:]
+stellar_mass = f['PartType1']['Stellar_Masses'][:]
 coords = f['PartType1']['Coordinates'][:]
 vel = f['PartType1']['Velocities'][:]
-mass_ratio = f['PartType1']['Mass_Ratio'][:]
+mass_ratio = stellar_mass/dm_mass[0]
 
 phase_space_coords =  np.concatenate((coords-host_pos,vel-host_vel),axis=1)
 
@@ -72,7 +74,7 @@ def build_model():
                               layers.Dense(64,activation='relu'),
                               layers.Dense(1)
                               ])
-    optimizer = tf.keras.optimizers.RmSprop(0.001)
+    optimizer = tf.keras.optimizers.RMSprop(0.001)
 
     model.compile(loss='mse', optimizer=optimizer,metrics=['mae','mse'])
 
@@ -88,8 +90,7 @@ EPOCHS = 10
 
 print('training model')
 
-history = model.fit(phase_space_non_zero,labels_non_zero,epochs=EPOCHS, validation_split=0.2, verbose=1,
-                    callbacks=[tfdocs.modeling.EpochDots()])
+history = model.fit(phase_space_non_zero,labels_non_zero,epochs=EPOCHS, validation_split=0.2, verbose=1)
 
 model.save('saved_models/regressor_test.h5')
 
