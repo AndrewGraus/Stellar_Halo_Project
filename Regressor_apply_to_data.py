@@ -3,6 +3,10 @@
 import numpy as np
 import h5py
 
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
 f_halo = h5py.File('../m12i_res_7100_cdm/halo/halo_600.hdf5')
 
 pos_halo = f_halo['position'][:]
@@ -28,13 +32,17 @@ print('running Vector regressor')
 
 phase_space_coords =  np.concatenate((coord_diff_predict,vel_diff_predict),axis=1)
 
-model = tf.keras.models.load_model('./saved_models/Classifier_biased_sigmoid.h5')
+model = tf.keras.models.load_model('./saved_models/regressor_test.h5')
 
-model_output = model.predict(phase_space_coords)
+model_output_10 = model.predict(phase_space_coords)
+
+model = tf.keras.models.load_model('./saved_models/regressor_test_epoch100.h5')
+model_output_100 = model.predict(phase_space_coords)
 
 f_write = h5py.File('./predictions_from_regressor.hdf5')
 f_write.create_dataset("PartType1/ParticleIDs",data=id_predict)
-f_write.create_dataset("PartType1/mass_ratio",data=model_output)
+f_write.create_dataset("PartType1/mass_ratio_10",data=model_output_10)
+f_write.create_dataset("PartType1/mass_ratio_100",data=model_output_100)
 
 
 print('finished')

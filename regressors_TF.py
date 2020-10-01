@@ -86,12 +86,12 @@ model = build_model()
 
 print(model.summary())
 
-EPOCHS = 10
+EPOCHS = 1000
 
 print('training model')
 
 history = model.fit(phase_space_non_zero,labels_non_zero,epochs=EPOCHS, validation_split=0.2, verbose=1)
 
-model.save('saved_models/regressor_test.h5')
+model.save('saved_models/regressor_test_epoch1000.h5')
 
 print('finished')
